@@ -1,0 +1,55 @@
+RX OFFLINE — FINAL PWA V2.1
+===========================
+
+IMPORTANTE
+----------
+NO abras index.html directamente desde content://, file:// o la app de Descargas.
+Eso sirve para preview, pero NO activa correctamente todas las funciones PWA.
+
+La app final debe publicarse una sola vez bajo HTTPS (por ejemplo Vercel).
+Después se instala desde el navegador en Android o iPhone y puede funcionar offline.
+
+ANDROID — INSTALACIÓN RECOMENDADA
+---------------------------------
+1. Descomprime este ZIP en tu computadora.
+2. Sube TODO el contenido de esta carpeta a un repositorio PRIVADO de GitHub.
+3. En Vercel: Add New > Project > Importa ese repositorio.
+4. Framework Preset: Other. Sin Build Command. Pulsa Deploy.
+5. Abre la URL https://...vercel.app en Chrome Android.
+6. Menú de Chrome > "Instalar aplicación" o "Añadir a pantalla de inicio".
+7. Abre Rx Offline desde el nuevo icono.
+8. Crea tu PIN/contraseña local, configura perfil, firma, pacientes y tema.
+9. Haz un respaldo cifrado después de la configuración inicial y periódicamente.
+
+IOS / IPHONE — SIN XCODE NI MAC
+-------------------------------
+1. Usa EXACTAMENTE la misma URL HTTPS ya desplegada.
+2. Ábrela en Safari (no dentro del navegador interno de otra app).
+3. Compartir > Añadir a pantalla de inicio.
+4. Abre Rx Offline desde el icono de la pantalla de inicio.
+5. Configura el mismo flujo: bóveda, perfil, firma y pacientes.
+
+ALMACENAMIENTO
+--------------
+- Pacientes, recetas, perfil y firma se guardan localmente cifrados en IndexedDB.
+- Sin Supabase NO hay sincronización automática entre teléfonos.
+- Para pasar a otro teléfono: Ajustes > Exportar respaldo cifrado; luego Importar respaldo en el otro dispositivo.
+- Si borras los datos del sitio/app o el sistema elimina el almacenamiento y no tienes backup, los datos locales pueden perderse.
+
+BIOMETRÍA
+---------
+- La app intenta usar WebAuthn/PRF cuando el navegador y dispositivo lo permiten.
+- La biometría requiere HTTPS y debe configurarse DESPUÉS de decidir la URL/dominio final.
+- Si no está disponible, el PIN/contraseña sigue funcionando.
+
+RECETA
+------
+- Media carta horizontal 8.5 x 5.5 pulgadas.
+- Imprimir / Guardar PDF usa el sistema de impresión del navegador.
+- Las recetas emitidas quedan inmutables en el historial; se anulan conservando el original.
+
+ESTADO DE ESTA VERSIÓN
+----------------------
+Es la versión PWA funcional para empezar pruebas reales y uso controlado en un dispositivo.
+Antes de depender de ella como único repositorio clínico, valida impresión, restauración de backup,
+comportamiento offline y compatibilidad biométrica en tus teléfonos reales.

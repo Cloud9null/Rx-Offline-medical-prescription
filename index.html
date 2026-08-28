@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0f2942">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Rx Offline">
+  <meta name="description" content="Prescripción médica local-first y cifrada">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Rx Offline</title>
+</head>
+<body>
+  <div id="app" class="app-shell" aria-live="polite">
+    <section id="setupView" class="auth-view hidden">
+      <div class="auth-card premium-card">
+        <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline</h1><p>Prescripción privada · local-first</p></div></div>
+        <h2>Configura tu bóveda local</h2>
+        <p class="muted">Los pacientes y recetas se cifran en este dispositivo. Crea un PIN de al menos 8 dígitos o una contraseña más larga.</p>
+        <form id="setupForm" class="stack">
+          <label>PIN o contraseña<input id="setupPin" type="password" autocomplete="new-password" required minlength="8" inputmode="numeric"></label>
+          <label>Confirmar<input id="setupPin2" type="password" autocomplete="new-password" required minlength="8" inputmode="numeric"></label>
+          <button class="btn primary" type="submit">Crear bóveda cifrada</button>
+        </form>
+        <p class="micro">No existe recuperación en servidor en esta versión. Guarda respaldos cifrados periódicamente.</p>
+      </div>
+    </section>
+
+    <section id="unlockView" class="auth-view hidden">
+      <div class="auth-card premium-card">
+        <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline</h1><p>Bóveda bloqueada</p></div></div>
+        <form id="unlockForm" class="stack">
+          <label>PIN o contraseña<input id="unlockPin" type="password" autocomplete="current-password" required></label>
+          <button class="btn primary" type="submit">Desbloquear</button>
+          <button id="biometricUnlockBtn" class="btn secondary hidden" type="button">Usar Face ID / Touch ID</button>
+        </form>
+        <div id="unlockMsg" class="inline-status"></div>
+      </div>
+    </section>
+
+    <section id="mainView" class="hidden">
+      <header class="topbar">
+        <div class="brand-lockup compact"><div class="brand-mark small">Rx</div><div><strong>Rx Offline</strong><span id="topSubtitle">Inicio</span></div></div>
+        <div class="top-actions"><span id="offlineBadge" class="status-pill">● Local</span><button id="lockBtn" class="icon-btn" type="button" aria-label="Bloquear">⌁</button></div>
+      </header>
+
+      <main class="content">
+        <section id="screen-home" class="screen active">
+          <div class="hero-panel">
+            <div><span class="eyebrow">PRESCRIPCIÓN LOCAL-FIRST</span><h2>Recetas elegantes, cifradas y listas para imprimir.</h2><p>Pacientes, historial y firma permanecen en tu dispositivo hasta que decidas sincronizarlos en una versión posterior.</p></div>
+            <button class="btn primary hero-cta" data-nav="rx" type="button">＋ Nueva receta</button>
+          </div>
+          <div class="metric-grid">
+            <button class="metric-card" data-nav="patients" type="button"><span>Pacientes</span><strong id="patientCount">0</strong><small>Alta y búsqueda local</small></button>
+            <button class="metric-card" data-nav="history" type="button"><span>Recetas</span><strong id="recipeCount">0</strong><small>Emitidas e inmutables</small></button>
+            <button class="metric-card" data-nav="settings" type="button"><span>Seguridad</span><strong>Local</strong><small>AES-GCM + firma ECDSA</small></button>
+          </div>
+          <div class="premium-card notice"><strong>Importante</strong><p>Sin Supabase no hay sincronización entre teléfonos. Usa “Respaldos” antes de cambiar de dispositivo.</p></div>
+        </section>
+
+        <section id="screen-patients" class="screen">
+          <div class="section-head"><div><span class="eyebrow">DIRECTORIO LOCAL</span><h2>Pacientes</h2></div><button id="newPatientBtn" class="btn primary" type="button">＋ Alta paciente</button></div>
+          <div class="toolbar"><input id="patientSearch" class="search" placeholder="Buscar por nombre…"></div>
+          <div id="patientList" class="list-stack"></div>
+          <div id="patientEditor" class="premium-card hidden"></div>
+        </section>
+
+        <section id="screen-rx" class="screen">
+          <div class="section-head"><div><span class="eyebrow">NUEVA PRESCRIPCIÓN</span><h2>Emitir receta</h2></div><button id="resetRxBtn" class="btn ghost" type="button">Limpiar</button></div>
+          <form id="rxForm" class="stack-lg">
+            <div class="premium-card">
+              <div class="card-title"><span>01</span><h3>Paciente</h3></div>
+              <div class="form-grid two">
+                <label>Paciente registrado<select id="rxPatient" required><option value="">Seleccionar…</option></select></label>
+                <button id="quickPatientBtn" class="btn secondary align-end" type="button">＋ Nuevo paciente</button>
+              </div>
+              <div id="selectedPatientSummary" class="patient-summary muted">Selecciona un paciente.</div>
+              <div id="pediatricWeightWrap" class="form-grid two hidden"><label>Peso pediátrico (kg)<input id="rxWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label><div class="soft-callout">El peso se muestra solo en pacientes menores de 18 años.</div></div>
+            </div>
+
+            <div class="premium-card">
+              <div class="card-title"><span>02</span><h3>Prescripción</h3></div>
+              <div id="medicationList" class="stack"></div>
+              <button id="addMedBtn" class="btn secondary full" type="button">＋ Agregar medicamento</button>
+              <label class="top-gap">Indicaciones generales<textarea id="rxGeneral" rows="3" placeholder="Recomendaciones, signos de alarma, seguimiento…"></textarea></label>
+            </div>
+
+            <div class="premium-card">
+              <div class="card-title"><span>03</span><h3>Firma</h3></div>
+              <div class="signature-choice">
+                <label class="radio-card"><input type="radio" name="signatureMode" value="profile" checked><span><strong>Firma guardada</strong><small>Usa la firma de tu perfil</small></span></label>
+                <label class="radio-card"><input type="radio" name="signatureMode" value="fresh"><span><strong>Firmar ahora</strong><small>Firma con el dedo antes de emitir</small></span></label>
+              </div>
+              <div id="freshSignatureWrap" class="hidden"><canvas id="rxSignatureCanvas" class="signature-pad" width="900" height="260"></canvas><div class="row-actions"><button id="clearRxSignature" class="btn ghost" type="button">Borrar firma</button></div></div>
+            </div>
+
+            <div class="emit-bar"><div><strong>Receta media carta horizontal</strong><small>8.5 × 5.5 pulgadas · PDF mediante impresión del sistema</small></div><button class="btn primary" type="submit">Emitir y sellar</button></div>
+            <div id="rxMsg" class="inline-status"></div>
+          </form>
+        </section>
+
+        <section id="screen-history" class="screen">
+          <div class="section-head"><div><span class="eyebrow">TRAZABILIDAD</span><h2>Historial</h2></div></div>
+          <div class="toolbar"><input id="historySearch" class="search" placeholder="Paciente o folio…"></div>
+          <div id="historyList" class="list-stack"></div>
+          <div id="recipeDetail" class="hidden"></div>
+        </section>
+
+        <section id="screen-settings" class="screen">
+          <div class="section-head"><div><span class="eyebrow">PERSONALIZACIÓN Y SEGURIDAD</span><h2>Ajustes</h2></div></div>
+          <div class="premium-card">
+            <div class="card-title"><span>MD</span><h3>Perfil médico</h3></div>
+            <form id="profileForm" class="stack">
+              <div class="form-grid two"><label>Nombre completo<input id="profileName" required></label><label>Profesión / especialidad<input id="profileRole" value="Medicina General"></label></div>
+              <div class="form-grid two"><label>Cédula profesional<input id="profileLicense" required></label><label>Institución / universidad<input id="profileUniversity"></label></div>
+              <label>Domicilio profesional<textarea id="profileAddress" rows="2"></textarea></label>
+              <div class="form-grid two"><label>Teléfono opcional<input id="profilePhone"></label><label>Correo opcional<input id="profileEmail" type="email"></label></div>
+              <button class="btn primary" type="submit">Guardar perfil</button>
+            </form>
+          </div>
+
+          <div class="premium-card">
+            <div class="card-title"><span>✍</span><h3>Firma del perfil</h3></div>
+            <canvas id="profileSignatureCanvas" class="signature-pad" width="900" height="260"></canvas>
+            <div class="row-actions"><button id="clearProfileSignature" class="btn ghost" type="button">Borrar</button><button id="saveProfileSignature" class="btn secondary" type="button">Guardar firma</button></div>
+            <p class="micro">Puedes usar esta firma automáticamente o firmar cada receta de forma manual.</p>
+          </div>
+
+          <div class="premium-card">
+            <div class="card-title"><span>◈</span><h3>Temas premium</h3></div>
+            <div id="themeGrid" class="theme-grid"></div>
+          </div>
+
+          <div class="premium-card">
+            <div class="card-title"><span>⌘</span><h3>Bloqueo y biometría</h3></div>
+            <div class="settings-line"><div><strong>Bloqueo automático</strong><small>Se bloquea al quedar inactiva</small></div><select id="lockTimeout"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="0">Nunca</option></select></div>
+            <div class="settings-line"><div><strong>Face ID / Touch ID</strong><small>WebAuthn PRF cuando el navegador lo soporte</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
+            <div id="bioStatus" class="inline-status"></div>
+          </div>
+
+          <div class="premium-card">
+            <div class="card-title"><span>⇩</span><h3>Respaldos cifrados</h3></div>
+            <p class="muted">El respaldo contiene tu bóveda todavía cifrada. Para restaurarla necesitas el mismo PIN o contraseña.</p>
+            <div class="row-actions wrap"><button id="exportBackupBtn" class="btn secondary" type="button">Exportar respaldo</button><label class="btn ghost file-btn">Importar respaldo<input id="importBackupInput" type="file" accept="application/json,.json"></label></div>
+          </div>
+
+          <div class="premium-card danger-zone"><div><strong>Estado de almacenamiento</strong><p id="storageStatus" class="muted"></p></div></div>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Navegación principal">
+        <button data-nav="home" class="active" type="button"><span>⌂</span><small>Inicio</small></button>
+        <button data-nav="patients" type="button"><span>♙</span><small>Pacientes</small></button>
+        <button data-nav="rx" type="button"><span>℞</span><small>Receta</small></button>
+        <button data-nav="history" type="button"><span>◷</span><small>Historial</small></button>
+        <button data-nav="settings" type="button"><span>⚙</span><small>Ajustes</small></button>
+      </nav>
+    </section>
+  </div>
+
+  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="Femenino">Femenino</option><option value="Masculino">Masculino</option><option value="Otro">Otro</option></select></label></div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
+
+  <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <div id="printArea" aria-hidden="true"></div>
+  <script src="qr.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
