@@ -1,0 +1,38 @@
+Rx Offline — V2.2.1 QR + Layout Hotfix
+
+CORRECCIONES
+- Corrige el segundo QR que podía desaparecer por exceder 271 bytes.
+- Nuevo generador QR automático con capacidad hasta QR Version 40.
+- El paquete de autenticidad se compacta y comprime (gzip cuando el navegador lo soporta), reduciendo densidad del QR.
+- El QR continúa abriendo verify.html y muestra el contenido exacto firmado.
+- Compatibilidad con enlaces de verificación V2.2 anteriores.
+- QR de cédula mantiene el enlace SEP correcto:
+  https://cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action
+- Etiqueta: “Verificar autenticidad de receta”.
+- Receta horizontal refinada: QR lado a lado, firma alineada debajo, membrete y espaciados reorganizados.
+- Service Worker actualizado para forzar carga de la nueva versión.
+
+ARCHIVOS A REEMPLAZAR/SUBIR EN GITHUB (RAÍZ DEL REPO)
+1. app.js
+2. styles.css
+3. qr.js
+4. sw.js
+5. verify.js
+6. verify.html (incluido para mantener el verificador completo)
+
+COMMIT SUGERIDO
+Fix authenticity QR and refine prescription layout V2.2.1
+
+DESPUÉS DEL DEPLOY
+- Espera a que Vercel termine el deployment.
+- Cierra por completo la PWA y vuelve a abrirla.
+- Si aún ves la versión vieja, abre la URL en Safari/Chrome, recarga, ciérrala y vuelve a abrir la PWA.
+- Abre una receta del historial: las recetas ya emitidas también generan el nuevo QR al volver a renderizarse.
+
+PRUEBA RECOMENDADA
+Emite primero una receta ficticia y confirma:
+1) ambos QR son visibles;
+2) SEP abre correctamente;
+3) el QR de autenticidad abre verify.html;
+4) aparece “Receta auténtica” y la prescripción exacta;
+5) el PDF media carta horizontal queda dentro de una sola página.
