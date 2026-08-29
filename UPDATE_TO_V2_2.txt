@@ -1,0 +1,30 @@
+Rx Offline — Actualización V2.2
+
+CAMBIOS PRINCIPALES
+1) QR de cédula corregido a:
+   https://cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action
+2) El segundo QR ahora dice:
+   Verificar autenticidad de receta
+3) Ese QR ahora abre verify.html y muestra:
+   - autenticidad de la receta
+   - médico y cédula
+   - folio y fecha
+   - contenido exacto prescrito
+   - hash SHA-256 y fingerprint de clave
+4) Si el contenido firmado no coincide, la verificación falla.
+5) Mejoras visuales al membrete/logo de la receta.
+
+SI YA TIENES EL REPO EN GITHUB
+Sube y reemplaza estos archivos en la raíz del repo:
+- app.js
+- styles.css
+- sw.js
+- verify.html
+- verify.js
+- UPDATE_TO_V2_2.txt (opcional)
+
+Luego haz Commit changes.
+Vercel hará redeploy automático.
+
+IMPORTANTE
+Después del deploy, abre la app y haz un hard refresh o cierra/reabre la PWA para que el nuevo service worker cachee verify.html y verify.js.

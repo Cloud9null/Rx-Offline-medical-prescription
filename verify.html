@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#173c5e">
+  <meta name="description" content="Verificación criptográfica de receta Rx Offline">
+  <title>Verificar autenticidad de receta</title>
+  <style>
+    :root{--primary:#173c5e;--secondary:#b99352;--bg:#f3f6f8;--panel:#fff;--text:#18212a;--muted:#687581;--line:#dce3e8;--success:#126e47;--danger:#a43131;--shadow:0 20px 50px rgba(18,33,46,.10)}
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(circle at top,color-mix(in srgb,var(--secondary) 12%,transparent),transparent 28%),var(--bg);color:var(--text)}
+    .shell{max-width:960px;margin:0 auto;padding:24px 16px 50px}.hero{background:linear-gradient(135deg,var(--primary),color-mix(in srgb,var(--primary) 75%,#000),color-mix(in srgb,var(--secondary) 32%,var(--primary)));color:#fff;border-radius:28px;padding:26px;box-shadow:var(--shadow);position:relative;overflow:hidden}.hero:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;border:1px solid rgba(255,255,255,.14);right:-90px;top:-100px}.eyebrow{font-size:.72rem;letter-spacing:.16em;font-weight:900;color:color-mix(in srgb,var(--secondary) 75%,white)}h1{margin:6px 0 10px;font-size:clamp(1.7rem,4vw,2.5rem);letter-spacing:-.03em}p{line-height:1.5}.muted{color:var(--muted)}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:24px;box-shadow:0 8px 28px rgba(18,33,46,.05);padding:20px;margin-top:16px}.status{display:flex;align-items:center;gap:12px;padding:16px 18px;border-radius:18px;font-weight:800}.status.ok{background:color-mix(in srgb,var(--success) 10%,white);color:var(--success)}.status.bad{background:color-mix(in srgb,var(--danger) 10%,white);color:var(--danger)}.status.warn{background:color-mix(in srgb,var(--secondary) 12%,white);color:#6b572c}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.item{padding:14px 15px;border-radius:18px;background:#f7fafc;border:1px solid #e8edf1}.item strong{display:block;font-size:.8rem;color:var(--muted);margin-bottom:5px}.item div{font-weight:700}.med{padding:14px 0;border-bottom:1px solid var(--line)}.med:last-child{border-bottom:0}.med strong{display:block}.micro{font-size:.82rem}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}.footer-note{margin-top:18px;font-size:.85rem;color:var(--muted)}
+    @media(max-width:720px){.grid{grid-template-columns:1fr}.shell{padding:16px 12px 34px}.hero,.card{padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">VERIFICACIÓN CRIPTOGRÁFICA</div>
+      <h1>Autenticidad de receta</h1>
+      <p>Esta página verifica localmente la firma digital incluida en el QR y compara el contenido firmado con la receta original emitida.</p>
+    </section>
+
+    <section id="statusCard" class="card">
+      <div id="statusBox" class="status warn">Procesando verificación…</div>
+      <p id="statusDetail" class="footer-note">El contenido del QR se procesa en tu navegador. No necesita una base de datos para confirmar la integridad.</p>
+    </section>
+
+    <section id="summaryCard" class="card hidden" style="display:none">
+      <div class="grid">
+        <div class="item"><strong>Folio</strong><div id="vId"></div></div>
+        <div class="item"><strong>Fecha de emisión</strong><div id="vIssuedAt"></div></div>
+        <div class="item"><strong>Médico</strong><div id="vDoctor"></div></div>
+        <div class="item"><strong>Cédula profesional</strong><div id="vLicense"></div></div>
+        <div class="item"><strong>Paciente</strong><div id="vPatient"></div></div>
+        <div class="item"><strong>Estado</strong><div id="vState"></div></div>
+      </div>
+    </section>
+
+    <section id="rxCard" class="card hidden" style="display:none">
+      <h2 style="margin-top:0">Contenido prescrito</h2>
+      <div id="vMeds"></div>
+      <div class="item" style="margin-top:14px"><strong>Indicaciones adicionales</strong><div id="vGeneral"></div></div>
+    </section>
+
+    <section id="techCard" class="card hidden" style="display:none">
+      <h2 style="margin-top:0">Detalles del sello</h2>
+      <div class="grid">
+        <div class="item"><strong>Algoritmo</strong><div id="vAlgo"></div></div>
+        <div class="item"><strong>Fingerprint de clave</strong><div id="vFp" class="mono"></div></div>
+        <div class="item" style="grid-column:1/-1"><strong>SHA-256 del contenido firmado</strong><div id="vHash" class="mono micro"></div></div>
+      </div>
+      <p class="footer-note">Si alguien altera el PDF o reescribe la prescripción, el contenido visible dejará de corresponder con este contenido firmado y la verificación dejará de ser válida.</p>
+    </section>
+  </div>
+  <script src="verify.js"></script>
+</body>
+</html>
