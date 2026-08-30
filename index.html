@@ -58,7 +58,7 @@
             <button class="metric-card" data-nav="history" type="button"><span>Recetas</span><strong id="recipeCount">0</strong><small>Emitidas e inmutables</small></button>
             <button class="metric-card" data-nav="settings" type="button"><span>Seguridad</span><strong>Local</strong><small>AES-GCM + firma ECDSA</small></button>
           </div>
-          <div class="premium-card notice"><strong>Importante</strong><p>Sin Supabase no hay sincronización entre teléfonos. Usa “Respaldos” antes de cambiar de dispositivo.</p></div>
+          <div class="premium-card notice"><strong>Local-first + nube</strong><p>La bóveda sigue funcionando offline. Cuando conectes Supabase, pacientes y recetas se sincronizan entre tus dispositivos sin perder la copia local.</p></div>
         </section>
 
         <section id="screen-patients" class="screen">
@@ -122,6 +122,20 @@
             </form>
           </div>
 
+          <div class="premium-card cloud-card">
+            <div class="card-title"><span>☁</span><h3>Supabase · sincronización multi-dispositivo</h3></div>
+            <p id="cloudStatus" class="muted">Comprobando configuración…</p>
+            <div id="cloudLoginWrap" class="stack">
+              <div class="form-grid two"><label>Correo de Supabase Auth<input id="cloudEmail" type="email" autocomplete="username" placeholder="tu@email.com"></label><label>Contraseña<input id="cloudPassword" type="password" autocomplete="current-password"></label></div>
+              <button id="cloudLoginBtn" class="btn primary" type="button">Iniciar sesión y sincronizar</button>
+            </div>
+            <div id="cloudSignedWrap" class="hidden">
+              <div class="row-actions wrap"><button id="cloudSyncBtn" class="btn primary" type="button">Sincronizar ahora</button><button id="cloudLogoutBtn" class="btn ghost" type="button">Cerrar sesión de nube</button></div>
+            </div>
+            <div id="cloudSyncStatus" class="inline-status"></div>
+            <p class="micro">La clave <strong>publishable/anon</strong> puede estar en frontend. Nunca pegues aquí una <strong>service_role</strong>. La bóveda local continúa cifrada aunque la nube no esté disponible.</p>
+          </div>
+
           <div class="premium-card">
             <div class="card-title"><span>✍</span><h3>Firma del perfil</h3></div>
             <canvas id="profileSignatureCanvas" class="signature-pad" width="900" height="260"></canvas>
@@ -167,6 +181,9 @@
 
   <div id="toast" class="toast" role="status"></div>
   <div id="printArea" aria-hidden="true"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="cloud.js"></script>
   <script src="qr.js"></script>
   <script src="app.js"></script>
 </body>
