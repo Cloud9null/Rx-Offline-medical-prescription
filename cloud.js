@@ -1,101 +1,37 @@
 (function(){
 'use strict';
 const cfg=window.RX_SUPABASE_CONFIG||{};
-let client=null;
+const SESSION_KEY='rxOfflineSupabaseSessionV1';
 let currentUser=null;
-let sdkPromise=null;
+let session=null;
 function configured(){return /^https:\/\/.+\.supabase\.co$/i.test(String(cfg.url||''))&&String(cfg.publishableKey||'').length>20&&!String(cfg.publishableKey).includes('PASTE_')}
-function loadSupabaseSdk(){
-  if(window.supabase?.createClient)return Promise.resolve(window.supabase);
-  if(sdkPromise)return sdkPromise;
-  sdkPromise=new Promise((resolve,reject)=>{
-    const existing=document.querySelector('script[data-rx-supabase-sdk]');
-    if(existing){
-      existing.addEventListener('load',()=>window.supabase?.createClient?resolve(window.supabase):reject(new Error('El SDK de Supabase cargó, pero createClient no está disponible.')),{once:true});
-      existing.addEventListener('error',()=>reject(new Error('No se pudo descargar el SDK de Supabase.')),{once:true});
-      return;
-    }
-    const script=document.createElement('script');
-    script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-    script.async=true;
-    script.dataset.rxSupabaseSdk='1';
-    script.onload=()=>window.supabase?.createClient?resolve(window.supabase):reject(new Error('El SDK de Supabase cargó, pero createClient no está disponible.'));
-    script.onerror=()=>reject(new Error('No se pudo descargar el SDK de Supabase. Revisa conexión, bloqueadores de contenido o vuelve a intentar.'));
-    document.head.appendChild(script);
-  });
-  return sdkPromise;
-}
-async function getClient(){
-  if(client)return client;
-  if(!configured())return null;
-  await loadSupabaseSdk();
-  if(!window.supabase?.createClient)throw new Error('No se pudo cargar el cliente de Supabase.');
-  client=window.supabase.createClient(cfg.url,cfg.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-  return client;
-}
-async function init(){
-  const c=await getClient(); if(!c)return {configured:false,user:null};
-  const {data,error}=await c.auth.getUser();
-  if(error&&error.name!=='AuthSessionMissingError')console.warn('Supabase getUser:',error.message);
-  currentUser=data?.user||null;
-  c.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;window.dispatchEvent(new CustomEvent('rx-cloud-auth',{detail:{user:currentUser}}));});
-  return {configured:true,user:currentUser};
-}
-async function signIn(email,password){const c=await getClient();if(!c)throw new Error('Supabase todavía no está configurado.');const {data,error}=await c.auth.signInWithPassword({email,password});if(error)throw error;currentUser=data.user;return currentUser}
-async function signOut(){const c=await getClient();if(!c)return;const {error}=await c.auth.signOut();if(error)throw error;currentUser=null}
-async function user(){const c=await getClient();if(!c)return null;const {data,error}=await c.auth.getUser();if(error)return null;currentUser=data.user||null;return currentUser}
-async function syncProfile(vault,u){
-  const c=await getClient();
-  const profile={...vault.profile,signature:undefined};
-  let r=await c.from('profiles').upsert({user_id:u.id,profile,updated_at:new Date().toISOString()},{onConflict:'user_id'}); if(r.error)throw r.error;
-  r=await c.from('physician_keys').upsert({user_id:u.id,public_jwk:vault.signing.publicJwk,fingerprint:vault.signing.keyFingerprint,active:true,updated_at:new Date().toISOString()},{onConflict:'user_id,fingerprint'}); if(r.error)throw r.error;
-}
-async function pullProfile(vault,u){
-  const c=await getClient();const {data,error}=await c.from('profiles').select('profile,updated_at').eq('user_id',u.id).maybeSingle();if(error)throw error;
-  if(data?.profile){const sig=vault.profile?.signature||null;vault.profile={...vault.profile,...data.profile,signature:sig}}
-}
-async function pushPatients(vault,u){
-  const c=await getClient(); if(!vault.patients.length)return;
-  const rows=vault.patients.map(p=>({user_id:u.id,id:p.id,payload:p,updated_at:p.updatedAt||p.createdAt||new Date().toISOString()}));
-  const {error}=await c.from('patients').upsert(rows,{onConflict:'user_id,id'}); if(error)throw error;
-}
-async function pushRecipes(vault,u,canonicalFactory){
-  const c=await getClient();
-  for(const rec of vault.recipes){
-    if(!rec?.seal?.publicToken)continue;
-    const canonicalText=JSON.stringify(canonicalFactory(rec));
-    let r=await c.from('prescriptions').upsert({user_id:u.id,rx_id:rec.id,patient_id:rec.patient.id||null,status:rec.status||'issued',issued_at:rec.issuedAt,payload:rec,verification_token:rec.seal.publicToken,voided_at:rec.voidedAt||null,void_reason:rec.voidReason||null},{onConflict:'user_id,rx_id',ignoreDuplicates:true});
-    if(r.error)throw r.error;
-    if(rec.status==='void'){
-      r=await c.from('prescriptions').update({status:'void',voided_at:rec.voidedAt||new Date().toISOString(),void_reason:rec.voidReason||''}).eq('user_id',u.id).eq('rx_id',rec.id);if(r.error)throw r.error;
-    }
-    const publicSeal={algorithm:rec.seal.algorithm,hash:rec.seal.hash,signature:rec.seal.signature,publicJwk:rec.seal.publicJwk,keyFingerprint:rec.seal.keyFingerprint,canonicalVersion:rec.seal.canonicalVersion};
-    r=await c.from('prescription_verifications').upsert({token:rec.seal.publicToken,user_id:u.id,rx_id:rec.id,status:rec.status||'issued',issued_at:rec.issuedAt,canonical_text:canonicalText,seal:publicSeal,voided_at:rec.voidedAt||null,void_reason:rec.voidReason||null},{onConflict:'token',ignoreDuplicates:true});
-    if(r.error)throw r.error;
-    if(rec.status==='void'){
-      r=await c.from('prescription_verifications').update({status:'void',voided_at:rec.voidedAt||new Date().toISOString(),void_reason:rec.voidReason||''}).eq('token',rec.seal.publicToken).eq('user_id',u.id);if(r.error)throw r.error;
-    }
-  }
-}
-async function pullPatients(vault,u){
-  const c=await getClient();const {data,error}=await c.from('patients').select('id,payload,updated_at').eq('user_id',u.id);if(error)throw error;
-  const byId=new Map(vault.patients.map(p=>[p.id,p]));
-  for(const row of data||[]){const remote=row.payload||{};const local=byId.get(row.id);const rt=Date.parse(remote.updatedAt||row.updated_at||0)||0,lt=Date.parse(local?.updatedAt||local?.createdAt||0)||0;if(!local||rt>lt){if(local)Object.assign(local,remote);else vault.patients.push(remote)}}
-}
-async function pullRecipes(vault,u){
-  const c=await getClient();const {data,error}=await c.from('prescriptions').select('rx_id,status,payload,voided_at,void_reason').eq('user_id',u.id).order('issued_at',{ascending:false});if(error)throw error;
-  const byId=new Map(vault.recipes.map(r=>[r.id,r]));
-  for(const row of data||[]){let local=byId.get(row.rx_id);if(!local&&row.payload){local=row.payload;vault.recipes.push(local);byId.set(row.rx_id,local)}if(local&&row.status==='void'){local.status='void';local.voidedAt=row.voided_at||local.voidedAt;local.voidReason=row.void_reason||local.voidReason||''}}
-  vault.recipes.sort((a,b)=>String(b.issuedAt).localeCompare(String(a.issuedAt)));
-}
-async function syncVault(vault,canonicalFactory){
-  if(!navigator.onLine)throw new Error('Sin conexión. Los cambios permanecen en la bóveda local y se sincronizarán después.');
-  const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');
-  // Pull first to avoid an older device overwriting newer cloud data.
-  await pullProfile(vault,u);await pullPatients(vault,u);await pullRecipes(vault,u);
-  await syncProfile(vault,u);await pushPatients(vault,u);await pushRecipes(vault,u,canonicalFactory);
-  return {user:u};
-}
+function base(){return String(cfg.url||'').replace(/\/$/,'')}
+function emitAuth(){window.dispatchEvent(new CustomEvent('rx-cloud-auth',{detail:{user:currentUser}}))}
+function loadStoredSession(){try{const x=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(x?.access_token&&x?.refresh_token)return x}catch{}return null}
+function saveSession(s){session=s||null;currentUser=s?.user||null;try{if(s)localStorage.setItem(SESSION_KEY,JSON.stringify(s));else localStorage.removeItem(SESSION_KEY)}catch{}emitAuth()}
+function apiHeaders(accessToken=null,extra={}){const h={'apikey':cfg.publishableKey,'Accept':'application/json',...extra};if(accessToken)h.Authorization='Bearer '+accessToken;return h}
+async function parseResponse(r){const text=await r.text();let body=null;if(text){try{body=JSON.parse(text)}catch{body=text}}if(!r.ok){const msg=body?.msg||body?.message||body?.error_description||body?.error||`HTTP ${r.status}`;const e=new Error(String(msg));e.status=r.status;e.body=body;throw e}return body}
+async function request(url,options={}){try{return await parseResponse(await fetch(url,options))}catch(err){if(err instanceof TypeError)throw new Error('No se pudo conectar con Supabase. La app local sigue disponible; revisa internet y vuelve a intentar.');throw err}}
+async function refreshSession(){if(!session?.refresh_token)throw new Error('La sesión de Supabase expiró. Inicia sesión otra vez.');const data=await request(base()+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:apiHeaders(null,{'Content-Type':'application/json'}),body:JSON.stringify({refresh_token:session.refresh_token})});const next={...data,expires_at:Date.now()+Number(data.expires_in||3600)*1000};saveSession(next);return next}
+async function ensureSession(){if(!session)session=loadStoredSession();if(!session)return null;currentUser=session.user||currentUser;const exp=Number(session.expires_at||0);if(exp&&Date.now()>exp-60000){try{await refreshSession()}catch(err){if(!navigator.onLine)return session;saveSession(null);throw err}}return session}
+async function accessToken(){const s=await ensureSession();return s?.access_token||null}
+async function authUser(){const token=await accessToken();if(!token)return null;try{const u=await request(base()+'/auth/v1/user',{headers:apiHeaders(token)});currentUser=u||null;if(session&&u){session.user=u;saveSession(session)}return currentUser}catch(err){if(err.status===401&&session?.refresh_token){await refreshSession();return authUser()}throw err}}
+async function init(){if(!configured())return {configured:false,user:null};session=loadStoredSession();currentUser=session?.user||null;if(session&&navigator.onLine){try{await authUser()}catch(err){console.warn('Supabase session:',err.message)}}return {configured:true,user:currentUser}}
+async function signIn(email,password){if(!configured())throw new Error('Supabase todavía no está configurado.');const data=await request(base()+'/auth/v1/token?grant_type=password',{method:'POST',headers:apiHeaders(null,{'Content-Type':'application/json'}),body:JSON.stringify({email,password})});if(!data?.access_token)throw new Error('Supabase no devolvió una sesión válida.');data.expires_at=Date.now()+Number(data.expires_in||3600)*1000;saveSession(data);return currentUser}
+async function signOut(){const token=await accessToken();if(token&&navigator.onLine){try{await request(base()+'/auth/v1/logout',{method:'POST',headers:apiHeaders(token)})}catch{}}saveSession(null)}
+async function user(){if(!configured())return null;if(!session)session=loadStoredSession();if(!session)return null;if(!navigator.onLine){currentUser=session.user||null;return currentUser}return authUser()}
+function q(v){return encodeURIComponent(String(v))}
+async function rest(path,{method='GET',body=null,prefer=null}={}){let token=await accessToken();if(!token)throw new Error('Inicia sesión en Supabase primero.');const headers=apiHeaders(token);if(body!==null)headers['Content-Type']='application/json';if(prefer)headers['Prefer']=prefer;try{return await request(base()+'/rest/v1/'+path,{method,headers,body:body===null?undefined:JSON.stringify(body)})}catch(err){if(err.status===401&&session?.refresh_token){await refreshSession();token=await accessToken();const h=apiHeaders(token);if(body!==null)h['Content-Type']='application/json';if(prefer)h.Prefer=prefer;return request(base()+'/rest/v1/'+path,{method,headers:h,body:body===null?undefined:JSON.stringify(body)})}throw err}}
+async function upsert(table,rows,onConflict,ignore=false){const conflict=onConflict?'?on_conflict='+encodeURIComponent(onConflict):'';return rest(table+conflict,{method:'POST',body:rows,prefer:`resolution=${ignore?'ignore':'merge'}-duplicates,return=minimal`})}
+async function update(table,filters,changes){const qs=Object.entries(filters).map(([k,v])=>`${encodeURIComponent(k)}=eq.${q(v)}`).join('&');return rest(table+'?'+qs,{method:'PATCH',body:changes,prefer:'return=minimal'})}
+async function select(table,selectCols,filters={},extra=''){const parts=[`select=${encodeURIComponent(selectCols)}`];for(const [k,v] of Object.entries(filters))parts.push(`${encodeURIComponent(k)}=eq.${q(v)}`);if(extra)parts.push(extra);return rest(table+'?'+parts.join('&'))}
+async function syncProfile(vault,u){const profile={...vault.profile};delete profile.signature;await upsert('profiles',{user_id:u.id,profile,updated_at:new Date().toISOString()},'user_id');await upsert('physician_keys',{user_id:u.id,public_jwk:vault.signing.publicJwk,fingerprint:vault.signing.keyFingerprint,active:true,updated_at:new Date().toISOString()},'user_id,fingerprint')}
+async function pullProfile(vault,u){const rows=await select('profiles','profile,updated_at',{user_id:u.id},'limit=1');const row=Array.isArray(rows)?rows[0]:null;if(row?.profile){const sig=vault.profile?.signature||null;vault.profile={...vault.profile,...row.profile,signature:sig}}}
+async function pushPatients(vault,u){if(!vault.patients.length)return;const rows=vault.patients.map(p=>({user_id:u.id,id:p.id,payload:p,updated_at:p.updatedAt||p.createdAt||new Date().toISOString()}));await upsert('patients',rows,'user_id,id')}
+async function pushRecipes(vault,u,canonicalFactory){for(const rec of vault.recipes){if(!rec?.seal?.publicToken)continue;const canonicalText=JSON.stringify(canonicalFactory(rec));await upsert('prescriptions',{user_id:u.id,rx_id:rec.id,patient_id:rec.patient.id||null,status:rec.status||'issued',issued_at:rec.issuedAt,payload:rec,verification_token:rec.seal.publicToken,voided_at:rec.voidedAt||null,void_reason:rec.voidReason||null},'user_id,rx_id',true);if(rec.status==='void')await update('prescriptions',{user_id:u.id,rx_id:rec.id},{status:'void',voided_at:rec.voidedAt||new Date().toISOString(),void_reason:rec.voidReason||''});const publicSeal={algorithm:rec.seal.algorithm,hash:rec.seal.hash,signature:rec.seal.signature,publicJwk:rec.seal.publicJwk,keyFingerprint:rec.seal.keyFingerprint,canonicalVersion:rec.seal.canonicalVersion};await upsert('prescription_verifications',{token:rec.seal.publicToken,user_id:u.id,rx_id:rec.id,status:rec.status||'issued',issued_at:rec.issuedAt,canonical_text:canonicalText,seal:publicSeal,voided_at:rec.voidedAt||null,void_reason:rec.voidReason||null},'token',true);if(rec.status==='void')await update('prescription_verifications',{token:rec.seal.publicToken,user_id:u.id},{status:'void',voided_at:rec.voidedAt||new Date().toISOString(),void_reason:rec.voidReason||''})}}
+async function pullPatients(vault,u){const data=await select('patients','id,payload,updated_at',{user_id:u.id});const byId=new Map(vault.patients.map(p=>[p.id,p]));for(const row of data||[]){const remote=row.payload||{};const local=byId.get(row.id);const rt=Date.parse(remote.updatedAt||row.updated_at||0)||0,lt=Date.parse(local?.updatedAt||local?.createdAt||0)||0;if(!local||rt>lt){if(local)Object.assign(local,remote);else vault.patients.push(remote)}}}
+async function pullRecipes(vault,u){const data=await select('prescriptions','rx_id,status,payload,voided_at,void_reason',{user_id:u.id},'order=issued_at.desc');const byId=new Map(vault.recipes.map(r=>[r.id,r]));for(const row of data||[]){let local=byId.get(row.rx_id);if(!local&&row.payload){local=row.payload;vault.recipes.push(local);byId.set(row.rx_id,local)}if(local&&row.status==='void'){local.status='void';local.voidedAt=row.voided_at||local.voidedAt;local.voidReason=row.void_reason||local.voidReason||''}}vault.recipes.sort((a,b)=>String(b.issuedAt).localeCompare(String(a.issuedAt)))}
+async function syncVault(vault,canonicalFactory){if(!navigator.onLine)throw new Error('Sin conexión. Los cambios permanecen en la bóveda local.');const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');await pullProfile(vault,u);await pullPatients(vault,u);await pullRecipes(vault,u);await syncProfile(vault,u);await pushPatients(vault,u);await pushRecipes(vault,u,canonicalFactory);return {user:u}}
 async function syncRecipe(rec,vault,canonicalFactory){return syncVault(vault,canonicalFactory)}
 window.RxCloud={configured,init,signIn,signOut,user,syncVault,syncRecipe,config:()=>({url:cfg.url||'',configured:configured()})};
 })();
