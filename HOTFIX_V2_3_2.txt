@@ -1,0 +1,28 @@
+Rx Offline V2.3.2 — Supabase No-CDN Hotfix
+
+WHY
+The prior build depended on cdn.jsdelivr.net to load supabase-js. Safari/PWA/content blockers could prevent that script from loading, producing "No se pudo cargar el cliente de Supabase".
+
+THIS FIX
+- Removes all dependency on jsDelivr / external Supabase JS SDK.
+- cloud.js now talks directly to Supabase Auth + PostgREST via fetch().
+- verify.js calls the public verify_prescription RPC directly.
+- Local Rx functions remain independent of Supabase.
+- If Supabase or internet is unavailable, the local encrypted vault, patients, prescriptions, PDF/printing, signature and self-contained QR verification keep working.
+- New service-worker cache version forces Safari/PWA to pick up this build.
+
+UPLOAD/REPLACE IN GITHUB ROOT
+cloud.js
+index.html
+verify.html
+verify.js
+sw.js
+vercel.json
+
+DO NOT REPLACE your configured supabase-config.js.
+
+After Vercel is Ready:
+1. Open the Vercel URL in Safari and reload.
+2. Close the installed PWA completely.
+3. Open it again.
+4. Settings > Supabase > Sign in and sync.

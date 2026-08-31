@@ -1,0 +1,41 @@
+RX OFFLINE V2.3.4 — FINAL SUPABASE ATTEMPT
+
+1) SUPABASE
+- Open Supabase Dashboard -> SQL Editor -> New query.
+- Open: supabase/FINAL_REPAIR_AND_SYNC_V2_3_4.sql
+- Paste the ENTIRE file and press Run.
+- It is designed to be re-run without deleting existing patients/prescriptions.
+- Do not use service_role in the app.
+
+2) GITHUB
+If your current repository is already V2.3.3 Clinical Stable, replace:
+- cloud.js
+- sw.js
+Then add:
+- supabase/FINAL_REPAIR_AND_SYNC_V2_3_4.sql (documentation; optional in GitHub)
+
+For maximum certainty, you may instead upload the full V2.3.4 project files, but preserve your current supabase-config.js.
+
+Commit suggestion:
+Rx Offline V2.3.4 final Supabase RPC sync
+
+3) VERCEL
+- Wait until the new deployment says Ready.
+- Open the Vercel URL once in Safari and refresh.
+- Fully close the installed PWA, then reopen it.
+
+4) TEST
+- Unlock local vault.
+- Settings -> Supabase.
+- If already signed in, press “Sincronizar ahora”.
+- If not, sign in using the user created in Supabase Auth.
+
+The new client first calls rx_cloud_healthcheck() and then a single authenticated RPC rx_sync_bundle().
+If it fails, the UI should show the exact backend/RPC error instead of a generic connection message.
+
+5) LOCAL FALLBACK
+Regardless of Supabase status, Rx Offline remains local-first:
+patients, prescriptions, signature, PDF/print, local history, QR SEP, and self-contained cryptographic authenticity QR continue to work.
+
+6) BACKUP
+Before first real clinical use after this update, export one encrypted local backup and keep it in a secure location.

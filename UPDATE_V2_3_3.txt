@@ -1,0 +1,16 @@
+RX OFFLINE V2.3.3 — ARCHIVOS PARA COMMIT
+
+Reemplaza en la raíz de tu repo:
+- app.js
+- cloud.js
+- index.html
+- styles.css
+- sw.js
+
+NO reemplaces supabase-config.js: conserva el que ya configuraste.
+
+Commit sugerido:
+Rx Offline V2.3.3 clinical stable local-first
+
+Después espera Vercel = Ready.
+En iPhone: abre URL en Safari, recarga, cierra completamente la PWA y vuelve a abrirla.
