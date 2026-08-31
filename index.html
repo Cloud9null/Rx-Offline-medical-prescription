@@ -123,7 +123,7 @@
           </div>
 
           <div class="premium-card cloud-card">
-            <div class="card-title"><span>☁</span><h3>Supabase · nube opcional</h3></div>
+            <div class="card-title"><span>☁</span><h3>Supabase · sincronización multi-dispositivo</h3></div>
             <p id="cloudStatus" class="muted">Comprobando configuración…</p>
             <div id="cloudLoginWrap" class="stack">
               <div class="form-grid two"><label>Correo de Supabase Auth<input id="cloudEmail" type="email" autocomplete="username" placeholder="tu@email.com"></label><label>Contraseña<input id="cloudPassword" type="password" autocomplete="current-password"></label></div>
@@ -133,7 +133,7 @@
               <div class="row-actions wrap"><button id="cloudSyncBtn" class="btn primary" type="button">Sincronizar ahora</button><button id="cloudLogoutBtn" class="btn ghost" type="button">Cerrar sesión de nube</button></div>
             </div>
             <div id="cloudSyncStatus" class="inline-status"></div>
-            <div class="soft-callout cloud-local-note"><strong>Modo clínico local activo.</strong> Pacientes, recetas, firma, PDF y QR funcionan aunque Supabase no sincronice. La nube se puede depurar después sin bloquear la emisión.</div>
+            <div class="soft-callout cloud-local-note"><strong>Modo local-first activo.</strong> La app guarda primero en tu bóveda cifrada y, si tu sesión de Supabase está activa, sincroniza automáticamente cuando hay internet. Si la nube falla, la emisión local sigue disponible.</div>
             <p class="micro">La clave <strong>publishable/anon</strong> puede estar en frontend. Nunca pegues aquí una <strong>service_role</strong>. La bóveda local continúa cifrada aunque la nube no esté disponible.</p>
           </div>
 

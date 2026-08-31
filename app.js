@@ -99,11 +99,11 @@ function updateCloudUI(message=''){
   const configured=!!window.RxCloud?.configured?.();
   const signed=!!state.cloudUser;
   const status=$('#cloudStatus');
-  if(status)status.textContent=message||(configured?(signed?`Conectado a Supabase Auth como ${state.cloudUser.email||'usuario'} · sincronización manual`:'Supabase configurado · inicia sesión cuando quieras probar la nube'):'Supabase no configurado · modo local disponible');
+  if(status)status.textContent=message||(configured?(signed?`Conectado como ${state.cloudUser.email||'usuario'} · nube + local`:'Supabase configurado · inicia sesión para activar la nube'):'Supabase no configurado · modo local disponible');
   $('#cloudLoginWrap')?.classList.toggle('hidden',signed);
   $('#cloudSignedWrap')?.classList.toggle('hidden',!signed);
   const badge=$('#offlineBadge');
-  if(badge)badge.textContent=navigator.onLine?'● Local':'● Offline';
+  if(badge)badge.textContent=!navigator.onLine?'● Offline':(signed?'● Nube + local':'● Local');
 }
 async function runCloudSync({quiet=false}={}){
   if(!state.vault||!window.RxCloud?.configured?.())return;
@@ -124,11 +124,26 @@ async function runCloudSync({quiet=false}={}){
   }
 }
 function queueCloudSync(){
-  // V2.3.3: no sincroniza automáticamente. El flujo clínico local nunca depende de la nube.
+  clearTimeout(state.cloudSyncTimer);
   const el=$('#cloudSyncStatus');
-  if(el&&state.cloudUser) setStatus(el,'Cambios guardados localmente · sincronización manual pendiente.');
+  if(!state.cloudUser){if(el)setStatus(el,'Cambios guardados en la bóveda local.');return}
+  if(!navigator.onLine){if(el)setStatus(el,'Cambios guardados localmente · se sincronizarán al recuperar internet.');return}
+  if(el)setStatus(el,'Cambios guardados · sincronizando con Supabase…');
+  state.cloudSyncTimer=setTimeout(()=>runCloudSync({quiet:true}),900);
 }
-async function afterUnlock(){applyTheme(state.vault.settings.theme);await migrateProfileDefaults();showAuth('main');renderAll();navigate('home');scheduleLock();await initCloudState();if(state.cloudUser)setStatus($('#cloudSyncStatus'),'Sesión de nube disponible · sincronización manual.');}
+async function afterUnlock(){
+  applyTheme(state.vault.settings.theme);
+  await migrateProfileDefaults();
+  showAuth('main');
+  renderAll();
+  navigate('home');
+  scheduleLock();
+  await initCloudState();
+  if(state.cloudUser){
+    setStatus($('#cloudSyncStatus'),'Sesión de nube restaurada · sincronizando…');
+    if(navigator.onLine)await runCloudSync({quiet:true});
+  }
+}
 function lock(){state.vault=null;state.vaultKey=null;clearTimeout(state.lockTimer);$('#unlockPin').value='';$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric);showAuth('unlock');}
 function scheduleLock(){clearTimeout(state.lockTimer);const min=Number(state.vault?.settings?.lockTimeout||0);if(min>0)state.lockTimer=setTimeout(lock,min*60000)}
 function navigate(name){if(!state.vault)return;state.screen=name;$$('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));$$('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));const titles={home:'Inicio',patients:'Pacientes',rx:'Nueva receta',history:'Historial',settings:'Ajustes'};$('#topSubtitle').textContent=titles[name]||'';if(name==='patients')renderPatients();if(name==='history')renderHistory();if(name==='rx')renderRxPatientOptions();if(name==='settings')renderSettings();window.scrollTo({top:0,behavior:'smooth'});}
@@ -178,6 +193,29 @@ function renderRxSheet(rec){
       : '<div class="rx-logo-inner monogram"><div class="rx-logo-mark"><span class="rx-logo-cross">✚</span></div><div class="rx-logo-type"><span>Rx</span><small>MEDICAL</small></div></div>';
   return `<article class="rx-sheet" style="--rxp:${esc(rec.design?.primary||'#173c5e')};--rxs:${esc(rec.design?.secondary||'#b99352')}"><header class="rx-header"><div class="rx-doc-brand"><div class="rx-logo ${logoStyle}">${logoInner}<span class="rx-logo-accent"></span></div><div class="rx-doc-copy"><div class="rx-ribbon">PRESCRIPCIÓN MÉDICA</div><h3>${esc(rec.doctor.name)}</h3><p>${esc(rec.doctor.role)}</p><p>Cédula profesional: ${esc(rec.doctor.license)}${rec.doctor.university?' · '+esc(rec.doctor.university):''}</p>${rec.doctor.address?`<p>${esc(rec.doctor.address)}</p>`:''}${contact?`<p>${esc(contact)}</p>`:''}</div></div><div class="rx-meta"><p><strong>RECETA MÉDICA</strong></p><p>${esc(dateTxt)}</p><p>${esc(rec.id)}</p>${rec.status==='void'?'<p style="color:#a43131;font-weight:700">ANULADA</p>':''}</div></header><section class="rx-patient rx-patient-emphasis"><div class="patient-chip patient-name"><small>PACIENTE</small><strong>${esc(rec.patient.name)}</strong></div><div class="patient-chip"><small>F. NACIMIENTO</small><strong>${dob}</strong></div><div class="patient-chip"><small>EDAD</small><strong>${ageLabel}${ageLabel==='-'?'':' años'}</strong></div><div class="patient-chip"><small>SEXO</small><strong>${sex}</strong></div>${rec.patient.weight?`<div class="patient-chip"><small>PESO</small><strong>${esc(rec.patient.weight)} kg</strong></div>`:''}<div class="patient-chip wide"><small>ALERGIAS</small><strong>${esc(rec.patient.allergies||'No registradas')}</strong></div></section><section class="rx-body"><div class="rx-prescription"><div class="rx-symbol">℞</div>${medHtml}${rec.general?`<div class="rx-general"><strong>Indicaciones adicionales:</strong> ${esc(rec.general)}</div>`:''}</div><aside class="rx-side"><div class="rx-qr-block">${licenseQr}<span>Verificar cédula</span></div><div class="rx-qr-block">${integrityQr}<span>Verificar autenticidad de receta</span></div><div class="rx-signature"><img src="${rec.signatureImage}" alt="Firma"><div class="rx-signature-line"></div><strong>${esc(rec.doctor.name)}</strong><br>Céd. Prof. ${esc(rec.doctor.license)}</div></aside></section><footer class="rx-footer"><div class="hash">SHA-256: ${esc(rec.seal.hash)}</div><div class="key">Clave: ${esc(rec.seal.keyFingerprint)}<br>${esc(rec.seal.algorithm)}</div></footer></article>`
 }
+function renderHistory(filter=''){
+  const term=String(filter||'').trim().toLowerCase();
+  const recipes=Array.isArray(state.vault?.recipes)?state.vault.recipes:[];
+  const arr=recipes.filter(r=>{
+    const patientName=String(r?.patient?.name||'');
+    const id=String(r?.id||'');
+    return (patientName+' '+id).toLowerCase().includes(term);
+  });
+  const list=$('#historyList');
+  const detail=$('#recipeDetail');
+  if(detail)detail.classList.add('hidden');
+  if(!list)return;
+  if(!arr.length){
+    list.innerHTML='<div class="empty-state">Todavía no hay recetas emitidas.</div>';
+    return;
+  }
+  list.innerHTML=arr.map(r=>{
+    const medCount=Array.isArray(r?.medications)?r.medications.length:0;
+    const status=r?.status==='void'?'void':'issued';
+    return `<button class="list-item" type="button" data-recipe="${esc(r?.id||'')}" style="width:100%;text-align:left"><div class="avatar">Rx</div><div class="list-main"><strong>${esc(r?.patient?.name||'Paciente')}</strong><small>${esc(r?.id||'Sin folio')} · ${fmtDateTime(r?.issuedAt||'')} · ${medCount} medicamento(s)</small></div><span class="${status==='void'?'seal-void':'seal-ok'}">${status==='void'?'ANULADA':'SELLADA'}</span></button>`;
+  }).join('');
+  list.querySelectorAll('[data-recipe]').forEach(b=>b.addEventListener('click',()=>openRecipe(b.dataset.recipe)));
+}
 async function openRecipe(id){const rec=state.vault.recipes.find(r=>r.id===id);if(!rec)return;await ensureVerificationToken(rec);const ok=await verifyRecipeFixed(rec),d=$('#recipeDetail');d.classList.remove('hidden');d.innerHTML=`<div class="recipe-detail-card"><div class="recipe-detail-head"><div><span class="eyebrow">${esc(rec.id)}</span><h3 style="margin:5px 0">${esc(rec.patient.name)}</h3><div class="${ok?'seal-ok':'seal-void'}">${ok?'✓ Integridad local verificada':'⚠ El sello local no coincide'}</div></div><button class="icon-btn" type="button" id="closeRecipeDetail">×</button></div><div class="rx-preview-shell">${renderRxSheet(rec)}</div><div class="row-actions wrap"><button id="printRecipeBtn" class="btn primary" type="button">Imprimir / Guardar PDF</button><button id="duplicateRecipeBtn" class="btn secondary" type="button">Duplicar como nueva</button>${rec.status!=='void'?'<button id="voidRecipeBtn" class="btn danger" type="button">Anular receta</button>':''}</div><p class="micro">El QR de autenticidad abre un verificador público y muestra exactamente el contenido firmado al emitir. Si el PDF es alterado, la firma ya no coincidirá con ese contenido.</p></div>`;d.scrollIntoView({behavior:'smooth',block:'start'});$('#closeRecipeDetail').addEventListener('click',()=>d.classList.add('hidden'));$('#printRecipeBtn').addEventListener('click',()=>printRecipe(rec));$('#duplicateRecipeBtn').addEventListener('click',()=>duplicateRecipe(rec));$('#voidRecipeBtn')?.addEventListener('click',()=>voidRecipe(rec));}
 async function printRecipe(rec){await ensureVerificationToken(rec);$('#printArea').innerHTML=renderRxSheet(rec);setTimeout(()=>window.print(),80)}
 function duplicateRecipe(rec){navigate('rx');$('#rxPatient').value=rec.patient.id;updateSelectedPatient();$('#rxGeneral').value=rec.general||'';$('#medicationList').innerHTML='';state.medSeq=0;rec.medications.forEach(m=>addMedication(m));toast('Receta copiada como borrador nuevo')}
@@ -200,7 +238,7 @@ function bindEvents(){
   $('#lockTimeout').addEventListener('change',async e=>{state.vault.settings.lockTimeout=Number(e.target.value);await saveVault();scheduleLock();toast('Bloqueo automático actualizado')});
   $('#enableBiometricBtn').addEventListener('click',async()=>{setStatus($('#bioStatus'),'Preparando biometría…');try{await enableBiometric();setStatus($('#bioStatus'),'Face ID / Touch ID configurado para este dominio.',true);$('#enableBiometricBtn').textContent='Reconfigurar';toast('Biometría activada')}catch(err){setStatus($('#bioStatus'),err.message)}});
   $('#exportBackupBtn').addEventListener('click',()=>exportBackup().catch(err=>toast(err.message)));$('#importBackupInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await importBackup(f)}catch(err){toast(err.message)}finally{e.target.value=''}});
-  $('#cloudLoginBtn')?.addEventListener('click',async()=>{const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;if(!email||!password)return setStatus($('#cloudSyncStatus'),'Escribe correo y contraseña.');try{setStatus($('#cloudSyncStatus'),'Iniciando sesión…');state.cloudUser=await window.RxCloud.signIn(email,password);$('#cloudPassword').value='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Supabase Auth conectado. La sincronización de datos es manual y opcional.',true);toast('Cuenta de nube conectada')}catch(err){setStatus($('#cloudSyncStatus'),err.message||'No se pudo iniciar sesión')}});
+  $('#cloudLoginBtn')?.addEventListener('click',async()=>{const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;if(!email||!password)return setStatus($('#cloudSyncStatus'),'Escribe correo y contraseña.');try{setStatus($('#cloudSyncStatus'),'Iniciando sesión…');state.cloudUser=await window.RxCloud.signIn(email,password);$('#cloudPassword').value='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Supabase Auth conectado · sincronizando…',true);await runCloudSync({quiet:true});toast('Nube conectada y sincronizada')}catch(err){setStatus($('#cloudSyncStatus'),err.message||'No se pudo iniciar sesión')}});
   $('#cloudLogoutBtn')?.addEventListener('click',async()=>{try{await window.RxCloud.signOut();state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),'Sesión de nube cerrada.');toast('Supabase desconectado en este dispositivo')}catch(err){setStatus($('#cloudSyncStatus'),err.message)}});
   $('#cloudSyncBtn')?.addEventListener('click',()=>runCloudSync({quiet:false}));
   window.addEventListener('rx-cloud-auth',e=>{state.cloudUser=e.detail?.user||null;updateCloudUI()});
@@ -209,7 +247,7 @@ function bindEvents(){
 async function init(){
   if(!window.crypto?.subtle||!window.indexedDB){alert('Este navegador no ofrece las APIs criptográficas/almacenamiento necesarias. Usa Safari/Chrome moderno mediante HTTPS.');return;}
   state.db=await openDb();state.meta=await dbGet('meta','setup');state.profilePad=new SignaturePad($('#profileSignatureCanvas'));state.rxPad=new SignaturePad($('#rxSignatureCanvas'));bindEvents();if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});if(!state.meta)showAuth('setup');else{$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta.biometric);showAuth('unlock');}
-  window.addEventListener('online',()=>updateCloudUI());window.addEventListener('offline',()=>updateCloudUI());
+  window.addEventListener('online',()=>{updateCloudUI();if(state.vault&&state.cloudUser)queueCloudSync()});window.addEventListener('offline',()=>updateCloudUI());
 }
 init().catch(err=>{console.error(err);alert('Error al iniciar Rx Offline: '+err.message)});
 })();
