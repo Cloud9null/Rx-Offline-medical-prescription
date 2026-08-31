@@ -150,6 +150,12 @@
           </div>
 
           <div class="premium-card">
+            <div class="card-title"><span>✦</span><h3>Logo clínico</h3></div>
+            <p class="micro">Elige cómo se verá el membrete de la receta. El nombre del tema ya no se imprime dentro del logo.</p>
+            <div id="logoGrid" class="logo-grid"></div>
+          </div>
+
+          <div class="premium-card">
             <div class="card-title"><span>⌘</span><h3>Bloqueo y biometría</h3></div>
             <div class="settings-line"><div><strong>Bloqueo automático</strong><small>Se bloquea al quedar inactiva</small></div><select id="lockTimeout"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="0">Nunca</option></select></div>
             <div class="settings-line"><div><strong>Face ID / Touch ID</strong><small>WebAuthn PRF cuando el navegador lo soporte</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
@@ -176,7 +182,7 @@
     </section>
   </div>
 
-  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="F">Femenino (F)</option><option value="M">Masculino (M)</option></select></label></div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
+  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="F">F</option><option value="M">M</option><option value="O">O</option></select></label></div><div id="patientAgeHint" class="micro">Edad calculada automáticamente: —</div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
 
   <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
 
