@@ -123,16 +123,17 @@
           </div>
 
           <div class="premium-card cloud-card">
-            <div class="card-title"><span>☁</span><h3>Supabase · sincronización multi-dispositivo</h3></div>
+            <div class="card-title"><span>☁</span><h3>Supabase · nube opcional</h3></div>
             <p id="cloudStatus" class="muted">Comprobando configuración…</p>
             <div id="cloudLoginWrap" class="stack">
               <div class="form-grid two"><label>Correo de Supabase Auth<input id="cloudEmail" type="email" autocomplete="username" placeholder="tu@email.com"></label><label>Contraseña<input id="cloudPassword" type="password" autocomplete="current-password"></label></div>
-              <button id="cloudLoginBtn" class="btn primary" type="button">Iniciar sesión y sincronizar</button>
+              <button id="cloudLoginBtn" class="btn primary" type="button">Conectar cuenta de nube</button>
             </div>
             <div id="cloudSignedWrap" class="hidden">
               <div class="row-actions wrap"><button id="cloudSyncBtn" class="btn primary" type="button">Sincronizar ahora</button><button id="cloudLogoutBtn" class="btn ghost" type="button">Cerrar sesión de nube</button></div>
             </div>
             <div id="cloudSyncStatus" class="inline-status"></div>
+            <div class="soft-callout cloud-local-note"><strong>Modo clínico local activo.</strong> Pacientes, recetas, firma, PDF y QR funcionan aunque Supabase no sincronice. La nube se puede depurar después sin bloquear la emisión.</div>
             <p class="micro">La clave <strong>publishable/anon</strong> puede estar en frontend. Nunca pegues aquí una <strong>service_role</strong>. La bóveda local continúa cifrada aunque la nube no esté disponible.</p>
           </div>
 
@@ -175,7 +176,7 @@
     </section>
   </div>
 
-  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="Femenino">Femenino</option><option value="Masculino">Masculino</option><option value="Otro">Otro</option></select></label></div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
+  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="F">Femenino (F)</option><option value="M">Masculino (M)</option></select></label></div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
 
   <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
 
