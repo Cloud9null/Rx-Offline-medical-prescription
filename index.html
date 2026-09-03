@@ -59,6 +59,11 @@
             <button class="metric-card" data-nav="settings" type="button"><span>Seguridad</span><strong>Local</strong><small>AES-GCM + firma ECDSA</small></button>
           </div>
           <div class="premium-card notice"><strong>Local-first + nube</strong><p>La bóveda sigue funcionando offline. Cuando conectes Supabase, pacientes y recetas se sincronizan entre tus dispositivos sin perder la copia local.</p></div>
+          <div class="premium-card manual-template-card">
+            <div class="card-title"><span>✎</span><h3>Receta manual de contingencia</h3></div>
+            <p class="muted">Genera una hoja tamaño carta con <strong>2 recetas media carta</strong> listas para llenar y firmar a mano. Incluye tu membrete y únicamente el QR de verificación de cédula profesional.</p>
+            <button id="manualTemplateBtn" class="btn secondary full" type="button">Imprimir 2 recetas manuales</button>
+          </div>
         </section>
 
         <section id="screen-patients" class="screen">
@@ -185,6 +190,15 @@
   <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="F">F</option><option value="M">M</option><option value="O">O</option></select></label></div><div id="patientAgeHint" class="micro">Edad calculada automáticamente: —</div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
 
   <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
+
+  <dialog id="manualTemplateDialog" class="modal manual-template-dialog">
+    <div class="modal-card manual-template-modal-card">
+      <div class="modal-head"><div><span class="eyebrow">CONTINGENCIA / RECETA A MANO</span><h3>Dos recetas media carta por hoja</h3></div><button id="closeManualTemplateBtn" class="icon-btn" type="button" aria-label="Cerrar">×</button></div>
+      <p class="muted">Vista previa del formato. Se imprimirá en una hoja carta vertical con línea central de corte. No genera folio digital ni QR de autenticidad.</p>
+      <div id="manualTemplatePreview" class="manual-template-preview"></div>
+      <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir hoja carta</button></div>
+    </div>
+  </dialog>
 
   <div id="toast" class="toast" role="status"></div>
   <div id="printArea" aria-hidden="true"></div>
