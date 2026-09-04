@@ -194,9 +194,10 @@
   <dialog id="manualTemplateDialog" class="modal manual-template-dialog">
     <div class="modal-card manual-template-modal-card">
       <div class="modal-head"><div><span class="eyebrow">CONTINGENCIA / RECETA A MANO</span><h3>Dos recetas media carta por hoja</h3></div><button id="closeManualTemplateBtn" class="icon-btn" type="button" aria-label="Cerrar">×</button></div>
-      <p class="muted">Vista previa del formato. Se imprimirá en una hoja carta vertical con línea central de corte. No genera folio digital ni QR de autenticidad.</p>
+      <p class="muted">Vista previa del formato. Cada media carta recibe un folio manual distinto y conserva únicamente el QR de verificación de cédula. Este módulo es independiente de la receta electrónica.</p>
+      <div class="manual-style-panel"><div><strong>Estilo de impresión</strong><small>Estas paletas solo modifican la plantilla manual.</small></div><div id="manualStyleGrid" class="manual-style-grid"></div><p class="micro" style="margin:8px 2px 0">Cada mitad recibe un folio distinto y el par queda registrado dentro de tu bóveda local al imprimir. Para que cada hoja tenga folios nuevos, imprime una sola copia por operación y usa <strong>Nuevos folios</strong> antes de la siguiente hoja.</p></div>
       <div id="manualTemplatePreview" class="manual-template-preview"></div>
-      <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir hoja carta</button></div>
+      <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="regenerateManualFoliosBtn" class="btn secondary" type="button">Nuevos folios</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir hoja carta</button></div>
     </div>
   </dialog>
 
