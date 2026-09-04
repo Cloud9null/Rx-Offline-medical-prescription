@@ -62,7 +62,7 @@
           <div class="premium-card manual-template-card">
             <div class="card-title"><span>✎</span><h3>Receta manual de contingencia</h3></div>
             <p class="muted">Genera una hoja tamaño carta con <strong>2 recetas media carta</strong> listas para llenar y firmar a mano. Incluye tu membrete y únicamente el QR de verificación de cédula profesional.</p>
-            <button id="manualTemplateBtn" class="btn secondary full" type="button">Imprimir 2 recetas manuales</button>
+            <button id="manualTemplateBtn" class="btn secondary full" type="button">Imprimir recetas manuales por lote</button>
           </div>
         </section>
 
@@ -195,9 +195,10 @@
     <div class="modal-card manual-template-modal-card">
       <div class="modal-head"><div><span class="eyebrow">CONTINGENCIA / RECETA A MANO</span><h3>Dos recetas media carta por hoja</h3></div><button id="closeManualTemplateBtn" class="icon-btn" type="button" aria-label="Cerrar">×</button></div>
       <p class="muted">Vista previa del formato. Cada media carta recibe un folio manual distinto y conserva únicamente el QR de verificación de cédula. Este módulo es independiente de la receta electrónica.</p>
-      <div class="manual-style-panel"><div><strong>Estilo de impresión</strong><small>Estas paletas solo modifican la plantilla manual.</small></div><div id="manualStyleGrid" class="manual-style-grid"></div><p class="micro" style="margin:8px 2px 0">Cada mitad recibe un folio distinto y el par queda registrado dentro de tu bóveda local al imprimir. Para que cada hoja tenga folios nuevos, imprime una sola copia por operación y usa <strong>Nuevos folios</strong> antes de la siguiente hoja.</p></div>
+      <div class="manual-batch-panel"><div><strong>Lote de impresión</strong><small>Define aquí cuántas recetas físicas necesitas.</small></div><div class="manual-count-row"><label>Número de recetas<input id="manualPrintCount" type="number" min="1" max="100" step="1" value="2" inputmode="numeric"></label><div class="manual-batch-info"><strong id="manualBatchSummary">2 recetas · 1 hoja carta · 2 folios únicos</strong><small>2 recetas por hoja carta. Si eliges 20, se imprimen 10 hojas.</small></div></div><div class="manual-print-warning"><strong>Importante:</strong> en el diálogo de impresión del teléfono/computadora deja <b>Copias = 1</b>. La cantidad se controla aquí para que cada receta tenga un folio distinto.</div></div>
+      <div class="manual-style-panel"><div><strong>Estilo de impresión</strong><small>Estas paletas solo modifican la plantilla manual.</small></div><div id="manualStyleGrid" class="manual-style-grid"></div><p class="micro" style="margin:8px 2px 0">Los folios manuales son aleatorios e independientes de la fecha. Cada receta del lote recibe un serial distinto y el lote se registra en tu bóveda local.</p></div>
       <div id="manualTemplatePreview" class="manual-template-preview"></div>
-      <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="regenerateManualFoliosBtn" class="btn secondary" type="button">Nuevos folios</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir hoja carta</button></div>
+      <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="regenerateManualFoliosBtn" class="btn secondary" type="button">Regenerar folios</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir lote</button></div>
     </div>
   </dialog>
 
