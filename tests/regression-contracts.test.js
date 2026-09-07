@@ -46,3 +46,26 @@ test('every issued prescription can populate longitudinal medications without re
   assert.match(source,/encounterId:context\?\.encounterId\|\|null/);
   assert.match(source,/linked:Boolean\(context\)/);
 });
+
+test('hardening migration revokes destructive client privileges and covers foreign keys',()=>{
+  const sql=read('supabase/migrations/20260907195000_harden_emr_grants_and_indexes.sql');
+  assert.match(sql,/revoke delete[\s\S]+from authenticated/i);
+  assert.match(sql,/revoke update on public\.note_versions,public\.prescription_links,public\.audit_events/i);
+  assert.match(sql,/revoke execute on function public\.rls_auto_enable\(\)/i);
+  assert.ok((sql.match(/create index if not exists/g)||[]).length>=17);
+  assert.doesNotMatch(sql,/drop table|truncate|delete from|on delete cascade/i);
+});
+
+test('empty-device bootstrap grants owner reads while keeping anonymous access blocked',()=>{
+  const sql=read('supabase/migrations/20260907195500_enable_safe_legacy_bootstrap.sql');
+  assert.match(sql,/grant select on public\.profiles,public\.patients,public\.prescriptions to authenticated/i);
+  assert.match(sql,/revoke all on public\.profiles,public\.patients,public\.prescriptions from anon/i);
+  assert.doesNotMatch(sql,/insert|update|delete|drop|truncate/i);
+});
+
+test('legacy owner policies are optimized without broadening access',()=>{
+  const sql=read('supabase/migrations/20260907200000_optimize_legacy_rls.sql');
+  assert.ok((sql.match(/\(select auth\.uid\(\)\) = user_id/g)||[]).length>=13);
+  assert.match(sql,/create index if not exists prescriptions_user_patient_idx[\s\S]+\(user_id, patient_id\)/i);
+  assert.doesNotMatch(sql,/grant|insert into|update\s+public|delete from|drop|truncate/i);
+});

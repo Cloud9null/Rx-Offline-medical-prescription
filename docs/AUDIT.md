@@ -44,3 +44,20 @@ Hallazgos:
 ## Decisión arquitectónica
 
 No se migra a React/Next.js en esta fase. La aplicación es una PWA estática pequeña pero el motor clínico/criptográfico está estrechamente acoplado a `app.js`; una reescritura elevaría el riesgo sobre recetas reales. V3 usa `emr-core.js` (dominio puro) y `emr.js` (UI/adaptador) conectados por una API mínima, preservando `app.js` como fallback.
+
+## Aplicación controlada al proyecto compartido
+
+El propietario autorizó reutilizar `Expediente Medico v1` para no contratar una rama Supabase. Se aplicaron cuatro migraciones aditivas: esquema/RLS/RPC EMR, grants e índices reforzados, lectura owner-only para bootstrap legacy y optimización de políticas legacy.
+
+Validación posterior:
+
+- 12 tablas EMR creadas con RLS habilitada y sin acceso anónimo.
+- `emr_sync_bundle` es `SECURITY INVOKER`, requiere autenticación y tiene `search_path` vacío.
+- Roles cliente sin `DELETE` en EMR; evidencia final/addenda, vínculos Rx y auditoría sin `UPDATE`.
+- Usuario real owner: 1 perfil, 3 pacientes y 13 recetas visibles; identidad sintética ajena: 0/0/0.
+- Smoke autenticado de escritura EMR ejecutado dentro de transacción y revertido; 0 encounters y 0 notas quedaron almacenadas.
+- Conteos legacy finales: 3 pacientes, 13 recetas y 13 verificaciones, iguales al baseline.
+- Hashes de las tres funciones Rx legacy sin cambios.
+- Advisor: eliminadas advertencias nuevas de RLS/helper y advertencias de rendimiento por initplan/FK sin índice.
+
+El frontend de producción y `main` permanecen sin modificar. Solo el backend compartido recibió estas estructuras aditivas bajo autorización explícita.

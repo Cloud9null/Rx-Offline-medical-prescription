@@ -30,8 +30,10 @@ PHI, antecedentes, notas, documentos, recetas, firma manuscrita, clave privada E
 
 ## Recomendaciones antes de producción
 
-1. Aplicar y probar en una rama Supabase aislada con dos usuarios sintéticos.
+1. Completar la validación manual del Preview en dos navegadores/dispositivos con datos sintéticos.
 2. Migrar tokens a almacenamiento protegido por la bóveda sin forzar logout ni impedir recuperación.
 3. Diseñar E2EE cloud con clave maestra recuperable y ceremonia segura multi-dispositivo.
-4. Activar MFA, protección de contraseñas filtradas y revisar grants de RPC legacy.
+4. Activar MFA y protección de contraseñas filtradas; revisar periódicamente los grants de RPC legacy.
 5. Definir aviso de privacidad, responsable, procedimiento ARCO, respuesta a incidentes y contrato con encargados.
+
+Las migraciones compartidas ya pasaron RLS/grants, identidad owner y una identidad sintética ajena. Las advertencias Advisor restantes sobre RPC legacy son conocidas: `verify_prescription` debe ser público por token portador y los RPC Rx autenticados conservan el contrato existente; no se cambiaron en este release.

@@ -26,6 +26,12 @@ npm run test:e2e
 
 Los E2E usan exclusivamente datos sintéticos. Revisa [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) antes de aplicar la migración o crear un preview.
 
+## Estado del backend compartido
+
+Las cuatro migraciones aditivas de `supabase/migrations/` ya fueron aplicadas al proyecto existente **Expediente Medico v1** con autorización del propietario. No se creó una rama ni otro proyecto Supabase, por lo que esta integración no añade el costo horario de una rama. Las recetas, verificaciones y funciones históricas no fueron reemplazadas.
+
+La interfaz V3 continúa únicamente en `feat/emr-integrado-v3` y en Preview de Vercel. `main` y el deployment web de producción no se promueven sin aprobación explícita.
+
 ## Límites importantes
 
 - Esto no constituye certificación NOM-024, homologación ni asesoría jurídica.
@@ -35,7 +41,7 @@ Los E2E usan exclusivamente datos sintéticos. Revisa [docs/DEPLOYMENT.md](docs/
 
 ---
 
-# Rx Offline — PWA Final V2.1 (local-first)
+# Documentación heredada: Rx Offline — PWA Final V2.1
 
 Versión web instalable (PWA) para iPhone, iPad, Android y escritorio, sin Supabase.
 
