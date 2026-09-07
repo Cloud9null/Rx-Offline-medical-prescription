@@ -12,9 +12,10 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.locator('#profileName').fill('Dra. Prueba Sintética');
   await page.locator('#profileLicense').fill('TEST-000000');
   await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
-  const canvas=page.locator('#profileSignatureCanvas'),box=await canvas.boundingBox();
+  const canvas=page.locator('#profileSignatureCanvas');await canvas.scrollIntoViewIfNeeded();const box=await canvas.boundingBox();
   await page.mouse.move(box.x+40,box.y+70);await page.mouse.down();await page.mouse.move(box.x+180,box.y+35,{steps:8});await page.mouse.up();
   await page.locator('#saveProfileSignature').click();
+  await expect(page.locator('#toast')).toContainText('Firma guardada localmente');
 
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
   await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');
@@ -35,7 +36,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 
   await page.locator('#rxFromNoteBtn').click();
   await page.locator('.m-name').fill('Paracetamol');await page.locator('.m-strength').fill('500 mg tabletas');await page.locator('.m-dose').fill('500 mg');await page.locator('.m-frequency').fill('Cada 8 horas si dolor o fiebre');await page.locator('.m-duration').fill('3 días');
-  await page.locator('#rxForm').getByRole('button',{name:'Emitir y sellar'}).click();await page.locator('#confirmEmitBtn').click();
+  await page.locator('#rxForm').getByRole('button',{name:'Emitir y sellar'}).click();await expect(page.locator('#confirmDialog')).toBeVisible();await page.locator('#confirmEmitBtn').click();
   await expect(page.locator('#recipeDetail')).toContainText('Integridad local verificada');
 
   await page.locator('.bottom-nav [data-nav="emr"]').click();await page.locator('[data-open-record]').click();
