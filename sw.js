@@ -1,6 +1,7 @@
-const CACHE='rx-offline-v2-20260903-13-manual-v241';
-const CORE=['./','./index.html','./styles.css','./app.js','./cloud.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
+const CACHE='rx-offline-emr-v3-20260907-01';
+const CORE=['./','./index.html','./styles.css','./emr.css','./app.js','./emr-core.js','./emr.js','./cloud.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest'];
+const OPTIONAL=['./icons/icon-192.png','./icons/icon-512.png'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(async c=>{await c.addAll(CORE);await Promise.allSettled(OPTIONAL.map(x=>c.add(x)))}).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;

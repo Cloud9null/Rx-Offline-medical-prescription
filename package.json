@@ -1,0 +1,14 @@
+{
+  "name": "rx-offline-emr",
+  "version": "3.0.0-preview.1",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

@@ -1,3 +1,40 @@
+# Rx Offline EMR — V3 preview
+
+Rama incremental que integra expediente clínico local-first con el sistema Rx Offline existente. No reemplaza el motor criptográfico ni cambia el contenido canónico de recetas históricas.
+
+## Novedades V3
+
+- Dos flujos independientes: **Nueva consulta** y **Receta directa**.
+- Expediente longitudinal por paciente con consultas, notas y recetas vinculadas.
+- Nota de primera vez, evolución y referencia/interconsulta.
+- Antecedentes, alergias estructuradas, signos vitales, IMC, exploración, diagnósticos, órdenes/resultados, plan, tratamiento, pronóstico, alarmas y seguimiento.
+- Borradores con guardado automático dentro de la bóveda AES-GCM existente.
+- Finalización con snapshot canónico, SHA-256, firma ECDSA P-256, autor y timestamp.
+- Addenda firmados; una nota finalizada no se edita silenciosamente.
+- Adjuntos PDF/JPEG/PNG de hasta 3 MB cifrados dentro de la bóveda local (sin upload cloud en esta fase).
+- Relación consulta-receta fuera del payload firmado: una consulta puede tener varias recetas y una receta directa no requiere consulta.
+- Migración Supabase aditiva con RLS y sincronización `SECURITY INVOKER`.
+- Cola persistente, backoff, detección de conflicto de notas finales y protección ante una bóveda nueva vacía.
+
+## Desarrollo y pruebas
+
+```bash
+npm ci
+npm test
+npm run test:e2e
+```
+
+Los E2E usan exclusivamente datos sintéticos. Revisa [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) antes de aplicar la migración o crear un preview.
+
+## Límites importantes
+
+- Esto no constituye certificación NOM-024, homologación ni asesoría jurídica.
+- El cifrado fuerte cubre la bóveda local. Los datos sincronizados actuales se almacenan en Supabase protegidos por Auth/RLS, pero **no** son E2EE por campo.
+- La sesión Supabase histórica continúa en `localStorage` por compatibilidad; su migración a almacenamiento protegido requiere un release específico para no cerrar sesiones ni romper recuperación.
+- Los documentos permanecen locales hasta implementar almacenamiento cifrado de adjuntos y pruebas de restauración.
+
+---
+
 # Rx Offline — PWA Final V2.1 (local-first)
 
 Versión web instalable (PWA) para iPhone, iPad, Android y escritorio, sin Supabase.

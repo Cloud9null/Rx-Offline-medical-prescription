@@ -31,11 +31,48 @@ function mergeBundle(vault,bundle){
   for(const remote of bundle?.recipes||[]){if(!remote?.id)continue;let local=byRecipe.get(remote.id);if(!local){local=remote;vault.recipes.push(local);byRecipe.set(remote.id,local)}else if(remote.status==='void'){local.status='void';local.voidedAt=remote.voidedAt||local.voidedAt;local.voidReason=remote.voidReason||local.voidReason||''}if(local?.seal?.publicToken)local.seal.cloudRegistered=true}
   vault.recipes.sort((a,b)=>String(b.issuedAt||'').localeCompare(String(a.issuedAt||'')));
 }
+function emrBundle(vault){
+  const src=vault.emr||{};
+  const names=['encounters','clinicalNotes','noteVersions','diagnoses','observations','allergies','medications','orders','documents','consents','prescriptionLinks','auditEvents'];
+  const out={};for(const name of names)out[name]=Array.isArray(src[name])?src[name]:[];
+  out.documents=out.documents.map(d=>{const safe={...d};delete safe.dataUrl;safe.updatedAt=safe.updatedAt||safe.createdAt;return safe});
+  return out;
+}
+function mergeEmrBundle(vault,bundle){
+  if(!vault.emr||!bundle)return;
+  const merge=window.RxEmrCore?.mergeCollection||((a,b)=>{const m=new Map((a||[]).map(x=>[x.id,x]));for(const x of b||[])if(x?.id&&!m.has(x.id))m.set(x.id,x);return Array.from(m.values())});
+  const localNotes=new Map((vault.emr.clinicalNotes||[]).map(x=>[x.id,x]));
+  vault.emr.conflicts=Array.isArray(vault.emr.conflicts)?vault.emr.conflicts:[];
+  for(const remote of bundle.clinicalNotes||[]){const local=localNotes.get(remote.id);if(local?.status==='final'&&remote.status==='final'&&local.canonicalText&&remote.canonicalText&&local.canonicalText!==remote.canonicalText){if(!vault.emr.conflicts.some(c=>c.entityId===local.id&&c.status==='open'))vault.emr.conflicts.push({id:crypto.randomUUID(),entityType:'clinical_note',entityId:local.id,status:'open',detectedAt:new Date().toISOString(),localHash:local.seal?.hash||'',remoteHash:remote.seal?.hash||'',remoteRecord:remote,resolution:'manual_review_required'});continue}localNotes.set(remote.id,merge(local?[local]:[],[remote])[0])}
+  vault.emr.clinicalNotes=Array.from(localNotes.values());
+  for(const name of ['encounters','noteVersions','diagnoses','observations','allergies','medications','orders','documents','consents','prescriptionLinks','auditEvents'])vault.emr[name]=merge(vault.emr[name]||[],bundle[name]||[]);
+}
+function setEmrQueue(vault,status,error=''){
+  if(!vault.emr)return;vault.emr.syncQueue=Array.isArray(vault.emr.syncQueue)?vault.emr.syncQueue:[];
+  let item=vault.emr.syncQueue.find(x=>x.id==='emr-bundle');if(!item){item={id:'emr-bundle',kind:'emr_bundle',attempts:0};vault.emr.syncQueue.push(item)}
+  item.status=status;item.updatedAt=new Date().toISOString();item.lastError=error||'';if(status==='syncing')item.attempts=(item.attempts||0)+1;if(status==='synced'){item.syncedAt=item.updatedAt;item.attempts=0}
+}
+async function syncEmr(vault){
+  if(!vault.emr)return {available:false,skipped:true};setEmrQueue(vault,'syncing');
+  try{const bundle=await rpc('emr_sync_bundle',{p_bundle:emrBundle(vault)},true);if(!bundle?.ok)throw new Error('El backend EMR no confirmó la sincronización.');mergeEmrBundle(vault,bundle);setEmrQueue(vault,'synced');return {available:true,bundle}}
+  catch(err){setEmrQueue(vault,'error',err.message||String(err));if(err.status===404||/emr_sync_bundle|function.*not found|PGRST202/i.test(err.message||''))return {available:false,migrationRequired:true};throw err}
+}
+function isEmptyLocalVault(vault){return !(vault.profile?.name||vault.profile?.license)&&(vault.patients||[]).length===0&&(vault.recipes||[]).length===0}
+async function bootstrapRemoteVault(vault){
+  const token=await accessToken();if(!token)throw new Error('Authentication required');
+  const headers=apiHeaders(token),[profiles,patients,recipes]=await Promise.all([
+    request(base()+'/rest/v1/profiles?select=profile,updated_at&limit=1',{headers}),
+    request(base()+'/rest/v1/patients?select=payload,updated_at&order=updated_at.desc',{headers}),
+    request(base()+'/rest/v1/prescriptions?select=payload,updated_at&order=updated_at.desc',{headers})
+  ]);
+  mergeBundle(vault,{profile:profiles?.[0]?.profile||null,patients:(patients||[]).map(x=>x.payload),recipes:(recipes||[]).map(x=>x.payload)});
+}
 async function healthcheck(){const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');const data=await rpc('rx_cloud_healthcheck',{},true);if(!data?.ok)throw new Error('El backend respondió, pero la sesión no quedó autenticada.');return data}
 async function syncVault(vault,canonicalFactory){
   if(!navigator.onLine)throw new Error('Sin conexión. Los cambios permanecen en la bóveda local.');
   const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');
   try{await healthcheck()}catch(err){throw new Error(`Backend Supabase: ${err.message}. Si ves “function not found”, ejecuta FINAL_REPAIR_AND_SYNC_V2_3_4.sql en SQL Editor.`)}
+  if(isEmptyLocalVault(vault)){try{await bootstrapRemoteVault(vault)}catch(err){throw new Error(`Protección de restauración: no se pudo leer la nube antes de escribir (${err.message}). No se envió una bóveda vacía.`)}}
   const recipes=(vault.recipes||[]).filter(r=>r?.seal?.publicToken).map(rec=>({rec,canonical_text:JSON.stringify(canonicalFactory(rec))}));
   const params={
     p_profile:stripProfile(vault),
@@ -48,8 +85,9 @@ async function syncVault(vault,canonicalFactory){
   try{bundle=await rpc('rx_sync_bundle',params,true)}catch(err){throw new Error(`Sincronización RPC: ${err.message}`)}
   if(!bundle?.ok)throw new Error('Supabase respondió sin confirmar la sincronización.');
   mergeBundle(vault,bundle);
-  return {user:u,bundle};
+  const emrResult=await syncEmr(vault);
+  return {user:u,bundle,emrResult};
 }
 async function syncRecipe(rec,vault,canonicalFactory){return syncVault(vault,canonicalFactory)}
-window.RxCloud={configured,init,signIn,signOut,user,healthcheck,syncVault,syncRecipe,config:()=>({url:cfg.url||'',configured:configured()})};
+window.RxCloud={configured,init,signIn,signOut,user,healthcheck,syncVault,syncRecipe,syncEmr,config:()=>({url:cfg.url||'',configured:configured()})};
 })();
