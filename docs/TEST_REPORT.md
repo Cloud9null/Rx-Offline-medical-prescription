@@ -8,7 +8,7 @@
 
 Cobertura funcional automatizada: migración aditiva del vault, edad pediátrica a fecha de atención, JSON canónico estable, validación mínima, IMC/alertas, conflicto final/draft, presencia de `renderHistory`, firma/QR/SEP/manuales/anulación, vínculo externo al payload Rx, assets PWA y propiedades de RLS/migración.
 
-## E2E escrito
+## E2E remoto
 
 `tests/e2e/clinical-flow.spec.js` cubre:
 
@@ -21,8 +21,12 @@ Cobertura funcional automatizada: migración aditiva del vault, edad pediátrica
 7. timeline;
 8. receta directa sin encounter.
 
-## Bloqueado en este entorno
+GitHub Actions `EMR preview CI`, run 6: **PASS (2/2)** sobre `914fed340b177d22db9221fa70d0f38c154fc497`.
 
-La descarga de Chromium de Playwright recibió 502/timeout desde `cdn.playwright.dev`; `agent-browser` no pudo iniciar su daemon porque no existe un browser local. Por ello el E2E queda **no ejecutado**, no se afirma PASS. Debe ejecutarse en GitHub Actions o preview con browser disponible.
+Vercel reportó el deployment de ese commit como **Ready**. El preview tiene protección de autenticación de Vercel, por lo que la inspección pública anónima redirige a SSO.
+
+## Límites de validación
+
+En el contenedor local, la descarga de Chromium recibió 502/timeout y `agent-browser` no pudo iniciar sin browser. La ejecución equivalente sí se completó en GitHub Actions con Chromium instalado.
 
 Las migraciones/RLS no se aplicaron al Supabase productivo. Las pruebas SQL con dos usuarios están pendientes de una rama staging autorizada.
