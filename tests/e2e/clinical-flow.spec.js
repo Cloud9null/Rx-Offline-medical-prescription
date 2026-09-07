@@ -8,7 +8,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await expect(page.locator('#mainView')).toBeVisible();
 
-  await page.locator('[data-nav="settings"]').click();
+  await page.locator('.bottom-nav [data-nav="settings"]').click();
   await page.locator('#profileName').fill('Dra. Prueba Sintética');
   await page.locator('#profileLicense').fill('TEST-000000');
   await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
@@ -16,7 +16,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.mouse.move(box.x+40,box.y+70);await page.mouse.down();await page.mouse.move(box.x+180,box.y+35,{steps:8});await page.mouse.up();
   await page.locator('#saveProfileSignature').click();
 
-  await page.locator('[data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
+  await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
   await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');
   await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
   await expect(page.locator('#patientList')).toContainText('Paciente Sintético Uno');
@@ -38,7 +38,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.locator('#rxForm').getByRole('button',{name:'Emitir y sellar'}).click();await page.locator('#confirmEmitBtn').click();
   await expect(page.locator('#recipeDetail')).toContainText('Integridad local verificada');
 
-  await page.locator('[data-nav="emr"]').click();await page.locator('[data-open-record]').click();
+  await page.locator('.bottom-nav [data-nav="emr"]').click();await page.locator('[data-open-record]').click();
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
 });
 
