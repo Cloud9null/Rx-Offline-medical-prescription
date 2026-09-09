@@ -1,4 +1,4 @@
-# Rx Offline EMR — V3.1 preview
+# Rx Offline EMR — V3.1
 
 PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
 
@@ -29,16 +29,17 @@ Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [back
 
 Las cinco migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. La nueva migración añade únicamente la tabla de sobres de recuperación, un bucket privado y sus políticas RLS; no borra ni reescribe recetas o pacientes existentes.
 
-El frontend V3.1 permanece en `feat/emr-integrado-v3` y en un Preview de Vercel. `main` y producción no se promueven sin aprobación explícita.
+El frontend V3.1 está integrado en `main` y desplegado en producción tras aprobación explícita. Los cambios posteriores deben volver a pasar por rama, Preview, pruebas y revisión.
 
 ## IA generativa opcional
 
-El estructurador local funciona sin secretos. Para habilitar generación externa en Preview, configura desde el panel de Vercel, nunca en Git o chat:
+El estructurador local funciona sin red ni secretos. En Vercel, la función puede usar AI Gateway con el token OIDC efímero inyectado por la plataforma; no es necesario copiar una llave al cliente ni al repositorio. Variables opcionales:
 
-- `OPENAI_API_KEY`
-- `OPENAI_CLINICAL_MODEL` — opcional; por defecto `gpt-5-mini`.
+- `AI_GATEWAY_CLINICAL_MODEL` — por defecto `openai/gpt-5-mini`.
+- `AI_GATEWAY_API_KEY` — respaldo si el despliegue no dispone de OIDC.
+- `OPENAI_API_KEY` y `OPENAI_CLINICAL_MODEL` — reemplazo directo opcional.
 
-La función `/api/clinical-note` valida la sesión Supabase, usa salida JSON estricta y envía `store: false`. No recibe identificadores estructurados. Su uso clínico requiere evaluación de proveedor, aviso de privacidad y revisión médica antes de guardar o finalizar.
+La función `/api/clinical-note` valida la sesión Supabase, vuelve a minimizar el payload en servidor, usa salida JSON estricta, limita la salida, envía `store: false` y solicita no usar prompts para entrenamiento al Gateway. No recibe identificadores estructurados. Su uso clínico requiere evaluación de proveedor, aviso de privacidad y revisión médica antes de guardar o finalizar.
 
 ## Límites
 

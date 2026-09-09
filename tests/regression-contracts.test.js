@@ -36,7 +36,7 @@ test('E2EE migration creates private owner-scoped storage without destructive SQ
 });
 
 test('clinical AI endpoint is authenticated, no-store and never exposes the provider key',()=>{
-  const api=read('api/clinical-note.js'),emr=read('emr.js');assert.match(api,/\/auth\/v1\/user/);assert.match(api,/store:false/);assert.match(api,/process\.env\.OPENAI_API_KEY/);assert.doesNotMatch(emr,/OPENAI_API_KEY/);assert.match(emr,/identifiersSent:false/);
+  const api=read('api/clinical-note.js'),emr=read('emr.js');assert.match(api,/\/auth\/v1\/user/);assert.match(api,/store:false/);assert.match(api,/process\.env\.OPENAI_API_KEY/);assert.match(api,/process\.env\.VERCEL_OIDC_TOKEN/);assert.match(api,/ai-gateway\.vercel\.sh/);assert.match(api,/disallowPromptTraining:true/);assert.doesNotMatch(emr,/OPENAI_API_KEY|VERCEL_OIDC_TOKEN/);assert.match(emr,/identifiersSent:false/);
 });
 
 test('document payloads upload only encrypted content and cloud metadata strips ciphertext',()=>{
