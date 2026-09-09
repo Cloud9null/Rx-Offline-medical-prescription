@@ -2,24 +2,26 @@
 
 ## Estado
 
-- Rama: `feat/emr-integrado-v3`.
-- Producción: `main` intacta.
+- Rama de producción: `main`.
+- Producción: V3.1 promovida únicamente después de aprobación explícita.
 - Supabase: mismo proyecto gratuito; cinco migraciones aditivas aplicadas.
 - Storage: `rx-emr-private-v1`, privado, máximo 6 MB por JSON cifrado.
-- Frontend/API: Preview de Vercel mediante el PR.
+- Frontend/API: Vercel Production; cada ajuste se valida primero mediante Preview.
 
 No se necesita una rama Supabase facturable. El uso queda sujeto a las cuotas del plan existente.
 
 ## Variables
 
-Nunca incluir `service_role`, contraseña DB ni tokens administrativos en cliente o Git. Solo para IA externa, configura privadamente en Vercel:
+Nunca incluir `service_role`, contraseña DB ni tokens administrativos en cliente o Git. La opción recomendada para IA externa en Vercel usa `VERCEL_OIDC_TOKEN`, que la plataforma inyecta y rota automáticamente. No debe crearse manualmente. Configuración opcional:
 
 ```text
-OPENAI_API_KEY=<secreto>
+AI_GATEWAY_CLINICAL_MODEL=openai/gpt-5-mini
+AI_GATEWAY_API_KEY=<respaldo solo si OIDC no está disponible>
+OPENAI_API_KEY=<reemplazo directo opcional>
 OPENAI_CLINICAL_MODEL=gpt-5-mini
 ```
 
-Sin la llave, el asistente local funciona y el endpoint externo responde 503 sin perder el borrador.
+El endpoint da prioridad a la conexión directa si existe `OPENAI_API_KEY`; de lo contrario usa AI Gateway con OIDC. Si no hay proveedor, se agota el crédito o existe un límite temporal, el asistente local sigue disponible y el borrador no se modifica. El consumo queda sujeto al crédito y límites del plan Vercel; la aplicación no compra crédito ni habilita cobros automáticamente.
 
 ## Gate de promoción
 
