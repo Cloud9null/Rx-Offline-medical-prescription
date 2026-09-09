@@ -2,7 +2,7 @@ const {test,expect}=require('@playwright/test');
 
 test('synthetic patient → final note → linked prescription → timeline',async({page})=>{
   page.on('dialog',d=>d.accept());
-  await page.goto('/');
+  await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-test-123');
   await page.locator('#setupPin2').fill('synthetic-test-123');
   await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
@@ -44,7 +44,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 });
 
 test('direct prescription remains available without creating an encounter',async({page})=>{
-  await page.goto('/');
+  await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-test-456');await page.locator('#setupPin2').fill('synthetic-test-456');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('#directRxHomeBtn').click();
   await expect(page.locator('#screen-rx')).toHaveClass(/active/);
@@ -52,8 +52,34 @@ test('direct prescription remains available without creating an encounter',async
 });
 
 test('privacy-first local assistant structures a note without network AI',async({page})=>{
-  await page.goto('/');await page.locator('#setupPin').fill('synthetic-test-789');await page.locator('#setupPin2').fill('synthetic-test-789');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-test-789');await page.locator('#setupPin2').fill('synthetic-test-789');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();await page.locator('#patientName').fill('Paciente Sintético Asistente');await page.locator('#patientDob').fill('1985-04-02');await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
   await page.locator('#assistantKeyPoints').fill('MC: Cefalea\nPA: Inicio hace seis horas\nEF: Neurológico documentado sin déficit focal\nImpresión: Cefalea en estudio\nPlan: Vigilancia y reevaluación documentada');await page.locator('#structureLocalBtn').click();
   await expect(page.locator('[data-note-field="reasonForVisit"]')).toHaveValue('Cefalea');await expect(page.locator('[data-note-field="currentIllness"]')).toHaveValue('Inicio hace seis horas');await expect(page.locator('[data-note-field="assessment"]')).toHaveValue('Cefalea en estudio');await expect(page.locator('#assistantStatus')).toContainText('organizados localmente');await expect(page.locator('#copyDraftTextBtn')).toBeVisible();
+});
+
+test('public URL is gated before a vault can be created',async({page})=>{
+  await page.goto('/');
+  await expect(page.locator('#accessView')).toBeVisible();
+  await expect(page.locator('#setupView')).toBeHidden();
+  await expect(page.getByText('ACCESO RESTRINGIDO')).toBeVisible();
+  await expect(page.locator('#accessForm')).toBeVisible();
+});
+
+test('desktop uses a persistent side rail and mobile uses a top dropdown',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-navigation-123');await page.locator('#setupPin2').fill('synthetic-navigation-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await expect(page.locator('#primaryNav')).toBeVisible();
+  await expect(page.locator('#menuBtn')).toBeHidden();
+  const desktopBox=await page.locator('#primaryNav').boundingBox();expect(desktopBox.x).toBeLessThan(40);expect(desktopBox.height).toBeGreaterThan(400);
+
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('#menuBtn')).toBeVisible();
+  await expect(page.locator('#primaryNav')).toBeHidden();
+  await page.locator('#menuBtn').click();
+  await expect(page.locator('#primaryNav')).toBeVisible();
+  await expect(page.locator('#menuBtn')).toHaveAttribute('aria-expanded','true');
+  await page.locator('#primaryNav [data-nav="patients"]').click();
+  await expect(page.locator('#primaryNav')).toBeHidden();
+  await expect(page.locator('#screen-patients')).toHaveClass(/active/);
 });

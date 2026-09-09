@@ -1,4 +1,4 @@
-# Rx Offline EMR — V3.1
+# Rx Offline EMR — V3.2
 
 PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
 
@@ -13,6 +13,9 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Documentos PDF/JPEG/PNG cifrados antes de salir del dispositivo; Supabase Storage solo recibe ciphertext en un bucket privado owner-scoped.
 - Recuperación segura entre dispositivos mediante código aleatorio, PBKDF2-SHA-256 y sobre AES-GCM. El servidor nunca recibe la llave maestra ni el código en claro.
 - Supabase Auth/RLS y sincronización owner-only con cola, backoff y conflictos explícitos.
+- Acceso personal en dos capas: allowlist de propietario en Supabase y PIN/Face ID de la bóveda en cada dispositivo. El dominio público no permite crear una bóveda sin autorizar primero la cuenta.
+- Navegación adaptativa: rail lateral persistente en escritorio y menú superior desplegable en móvil, sin barra inferior fija.
+- Diecisiete paletas premium, incluidas dos variantes oscuras.
 - Instalación PWA en iPhone, iPad, Android y escritorio; bloqueo por PIN y Face ID/Touch ID mediante WebAuthn PRF cuando el navegador lo permite.
 
 ## Desarrollo y pruebas
@@ -27,7 +30,7 @@ Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [back
 
 ## Backend compartido
 
-Las cinco migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. La nueva migración añade únicamente la tabla de sobres de recuperación, un bucket privado y sus políticas RLS; no borra ni reescribe recetas o pacientes existentes.
+Las seis migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las dos últimas incorporan recuperación E2EE/documentos privados y una allowlist administrativa de acceso personal; no borran ni reescriben recetas, pacientes o notas existentes.
 
 El frontend V3.1 está integrado en `main` y desplegado en producción tras aprobación explícita. Los cambios posteriores deben volver a pasar por rama, Preview, pruebas y revisión.
 
@@ -39,7 +42,7 @@ El estructurador local funciona sin red ni secretos. En Vercel, la función pued
 - `AI_GATEWAY_API_KEY` — respaldo si el despliegue no dispone de OIDC.
 - `OPENAI_API_KEY` y `OPENAI_CLINICAL_MODEL` — reemplazo directo opcional.
 
-La función `/api/clinical-note` valida la sesión Supabase, vuelve a minimizar el payload en servidor, usa salida JSON estricta, limita la salida, envía `store: false` y solicita no usar prompts para entrenamiento al Gateway. No recibe identificadores estructurados. Su uso clínico requiere evaluación de proveedor, aviso de privacidad y revisión médica antes de guardar o finalizar.
+La función `/api/clinical-note` valida tanto la sesión Supabase como la allowlist del propietario, vuelve a minimizar el payload en servidor, usa salida JSON estricta, limita la salida, envía `store: false` y solicita no usar prompts para entrenamiento al Gateway. No recibe identificadores estructurados. Su uso clínico requiere evaluación de proveedor, aviso de privacidad y revisión médica antes de guardar o finalizar.
 
 ## Límites
 

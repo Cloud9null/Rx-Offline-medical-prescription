@@ -3,8 +3,9 @@
 ## Estado
 
 - Rama de producción: `main`.
-- Producción: V3.1 promovida únicamente después de aprobación explícita.
-- Supabase: mismo proyecto gratuito; cinco migraciones aditivas aplicadas.
+- Producción: V3.1; V3.2 requiere Preview y aprobación antes de promoverse.
+- Supabase: mismo proyecto gratuito; seis migraciones aditivas aplicadas.
+- Acceso: `app_authorized_users` con RLS, un propietario habilitado y sin lectura anónima.
 - Storage: `rx-emr-private-v1`, privado, máximo 6 MB por JSON cifrado.
 - Frontend/API: Vercel Production; cada ajuste se valida primero mediante Preview.
 
@@ -26,12 +27,16 @@ El endpoint da prioridad a la conexión directa si existe `OPENAI_API_KEY`; de l
 ## Gate de promoción
 
 1. Unit/regression y E2E Chromium en verde para el SHA final.
-2. Dos identidades sintéticas sin lectura cruzada.
+2. URL limpia muestra el acceso restringido; solo la identidad allowlisted puede autorizar un dispositivo nuevo.
 3. Restauración en segundo navegador con código y PIN nuevo.
 4. Upload/download de PDF/JPEG/PNG.
 5. Nota local/IA opcional, final, addendum y texto plano.
 6. Receta vinculada y receta directa; QR/verificador/anulación.
 7. PWA, modo avión/reconexión e impresión Rx.
 8. Aprobación explícita para merge/promoción.
+
+## Primer acceso tras V3.2
+
+En un navegador que ya tiene bóveda, inicia sesión una sola vez con la cuenta Supabase del propietario; el UID queda ligado criptográficamente al metadato local y después puede desbloquearse offline con PIN o biometría. En un dispositivo nuevo se exige primero esa cuenta y luego se crea o recupera la bóveda. No hay registro público.
 
 No registrar prompts, notas, tokens, códigos o cuerpos de Storage. Monitorear solo estado, latencia, versión, agregados y errores sanitizados.

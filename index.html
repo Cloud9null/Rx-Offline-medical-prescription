@@ -16,6 +16,23 @@
 </head>
 <body>
   <div id="app" class="app-shell" aria-live="polite">
+    <section id="accessView" class="auth-view hidden">
+      <div class="auth-card access-card premium-card">
+        <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline EMR</h1><p>Expediente privado del propietario</p></div></div>
+        <div class="access-kicker"><span>●</span> ACCESO RESTRINGIDO</div>
+        <h2>Identifica tu cuenta</h2>
+        <p class="muted">El enlace público no concede acceso. Solo una cuenta incluida en la lista privada de Supabase puede autorizar este dispositivo.</p>
+        <form id="accessForm" class="stack">
+          <label>Correo autorizado<input id="accessEmail" type="email" autocomplete="username" required></label>
+          <label>Contraseña<input id="accessPassword" type="password" autocomplete="current-password" required></label>
+          <button class="btn primary" type="submit">Autorizar este dispositivo</button>
+        </form>
+        <div id="accessStatus" class="inline-status" role="status"></div>
+        <div class="access-layers"><div><span>01</span><strong>Cuenta autorizada</strong><small>Supabase Auth + allowlist privada</small></div><div><span>02</span><strong>Bóveda del dispositivo</strong><small>PIN o Face ID / Touch ID</small></div></div>
+        <p class="micro">No existe registro público ni botón para crear usuarios. En un dispositivo ya autorizado, la bóveda continúa disponible offline.</p>
+      </div>
+    </section>
+
     <section id="setupView" class="auth-view hidden">
       <div class="auth-card premium-card">
         <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline</h1><p>Prescripción privada · local-first</p></div></div>
@@ -57,7 +74,7 @@
     <section id="mainView" class="hidden">
       <header class="topbar">
         <div class="brand-lockup compact"><div class="brand-mark small">Rx</div><div><strong>Rx Offline</strong><span id="topSubtitle">Inicio</span></div></div>
-        <div class="top-actions"><span id="offlineBadge" class="status-pill">● Local</span><button id="lockBtn" class="icon-btn" type="button" aria-label="Bloquear">⌁</button></div>
+        <div class="top-actions"><span id="offlineBadge" class="status-pill">● Local</span><button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Abrir navegación" aria-controls="primaryNav" aria-expanded="false">☰</button><button id="lockBtn" class="icon-btn" type="button" aria-label="Bloquear bóveda">⌁</button></div>
       </header>
 
       <main class="content">
@@ -158,7 +175,8 @@
           </div>
 
           <div class="premium-card cloud-card">
-            <div class="card-title"><span>☁</span><h3>Supabase · sincronización multi-dispositivo</h3></div>
+            <div class="card-title"><span>☁</span><h3>Cuenta privada y sincronización</h3></div>
+            <div class="owner-access-banner"><span>✓</span><div><strong>Dispositivo autorizado</strong><small id="ownerAccessStatus">Cuenta del propietario verificada</small></div></div>
             <p id="cloudStatus" class="muted">Comprobando configuración…</p>
             <div id="cloudLoginWrap" class="stack">
               <div class="form-grid two"><label>Correo de Supabase Auth<input id="cloudEmail" type="email" autocomplete="username" placeholder="tu@email.com"></label><label>Contraseña<input id="cloudPassword" type="password" autocomplete="current-password"></label></div>
@@ -215,13 +233,15 @@
         </section>
       </main>
 
-      <nav class="bottom-nav" aria-label="Navegación principal">
+      <button id="navBackdrop" class="nav-backdrop" type="button" aria-label="Cerrar navegación" tabindex="-1"></button>
+      <nav id="primaryNav" class="bottom-nav app-nav" aria-label="Navegación principal">
         <button data-nav="home" class="active" type="button"><span>⌂</span><small>Inicio</small></button>
         <button data-nav="patients" type="button"><span>♙</span><small>Pacientes</small></button>
         <button data-nav="emr" type="button"><span>▤</span><small>Expediente</small></button>
         <button data-nav="rx" type="button"><span>℞</span><small>Receta</small></button>
         <button data-nav="history" type="button"><span>◷</span><small>Historial</small></button>
         <button data-nav="settings" type="button"><span>⚙</span><small>Ajustes</small></button>
+        <div class="nav-trust"><span>Protección activa</span><small id="navUserLabel">Cuenta + bóveda local</small></div>
       </nav>
     </section>
   </div>

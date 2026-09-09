@@ -8,10 +8,11 @@
 | Robo del código aislado | El sobre solo se lee con sesión del propietario y está ligado al UID |
 | Manipulación/edición silenciosa | Snapshot, SHA-256, ECDSA, final inmutable y addenda |
 | IDOR/BOLA | RLS owner-only y RPC invoker |
+| Persona con solo el enlace de Vercel | Gate de cuenta, allowlist RLS y ausencia de registro público; después PIN/biometría local |
 | Bóveda vacía sobre nube | Bootstrap remoto obligatorio |
 | Conflicto de finales | Ambos se preservan para revisión |
 | XSS | Escape de campos y CSP |
-| Secreto de IA | Solo server-side; endpoint exige sesión |
+| Secreto de IA | Solo server-side; endpoint exige sesión y allowlist del propietario |
 | Transferencia excesiva a IA | Opt-in, minimización, `store:false`, salida estricta |
 | Desconexión | Local-first, cola y backoff |
 | Telemetría | Sin analytics/CDN; no se registran prompts |
@@ -25,6 +26,7 @@
 - El texto libre enviado voluntariamente a IA puede contener identificadores escritos por el usuario.
 - Vercel, Supabase y el proveedor de IA requieren evaluación contractual y de privacidad.
 - Biometría depende de WebAuthn PRF; el PIN es fallback.
+- Los archivos estáticos de una PWA son públicamente descargables; la protección cubre acceso funcional, datos y API, no pretende ocultar el código cliente.
 
 ## Antes de producción
 

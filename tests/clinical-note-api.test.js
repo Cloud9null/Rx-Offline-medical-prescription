@@ -19,16 +19,26 @@ test('Gateway request authenticates, minimizes PHI and disables prompt training'
   const calls=[];global.fetch=async(url,options={})=>{
     calls.push({url,options});
     if(String(url).includes('/auth/v1/user'))return {ok:true,status:200,json:async()=>({id:'synthetic-user'})};
+    if(String(url).includes('/rest/v1/app_authorized_users'))return {ok:true,status:200,json:async()=>[{role:'owner',enabled:true}]};
     const sections=Object.fromEntries(SECTION_KEYS.map(key=>[key,key==='reasonForVisit'?'Cefalea':'']));
     return {ok:true,status:200,json:async()=>({output_text:JSON.stringify({sections,diagnoses:[],reviewWarnings:['Revisar antes de firmar.']})})};
   };
   try{
     const req={method:'POST',headers:{authorization:'Bearer synthetic-session','x-vercel-oidc-token':'synthetic-runtime-oidc'},body:{noteType:'first_visit',keyPoints:'MC: cefalea',patientName:'NOMBRE QUE NO DEBE SALIR',patientId:'secret-id',documented:{assessment:'En estudio'},unexpected:{identifier:'secret'}}};
     const res=responseCapture();await handler(req,res);assert.equal(res.statusCode,200,res.body);
-    assert.equal(calls.length,2);assert.equal(calls[1].url,'https://ai-gateway.vercel.sh/v1/responses');assert.equal(calls[1].options.headers.Authorization,'Bearer synthetic-runtime-oidc');
-    const gatewayBody=JSON.parse(calls[1].options.body);assert.equal(gatewayBody.model,'openai/gpt-5-mini');assert.equal(gatewayBody.store,false);assert.equal(gatewayBody.providerOptions.gateway.disallowPromptTraining,true);assert.match(gatewayBody.input,/cefalea/);assert.doesNotMatch(gatewayBody.input,/NOMBRE QUE NO DEBE SALIR|secret-id|unexpected/);
+    assert.equal(calls.length,3);assert.match(calls[1].url,/app_authorized_users/);assert.equal(calls[2].url,'https://ai-gateway.vercel.sh/v1/responses');assert.equal(calls[2].options.headers.Authorization,'Bearer synthetic-runtime-oidc');
+    const gatewayBody=JSON.parse(calls[2].options.body);assert.equal(gatewayBody.model,'openai/gpt-5-mini');assert.equal(gatewayBody.store,false);assert.equal(gatewayBody.providerOptions.gateway.disallowPromptTraining,true);assert.match(gatewayBody.input,/cefalea/);assert.doesNotMatch(gatewayBody.input,/NOMBRE QUE NO DEBE SALIR|secret-id|unexpected/);
     assert.equal(JSON.parse(res.body).provider,'vercel-ai-gateway');
   }finally{
     global.fetch=oldFetch;if(oldOidc===undefined)delete process.env.VERCEL_OIDC_TOKEN;else process.env.VERCEL_OIDC_TOKEN=oldOidc;if(oldOpenAI===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldOpenAI;
   }
+});
+
+test('an authenticated but non-allowlisted account cannot call clinical AI',async()=>{
+  const oldFetch=global.fetch,calls=[];
+  global.fetch=async(url)=>{calls.push(String(url));if(String(url).includes('/auth/v1/user'))return {ok:true,status:200,json:async()=>({id:'not-owner'})};return {ok:true,status:200,json:async()=>[]}};
+  try{
+    const res=responseCapture();await handler({method:'POST',headers:{authorization:'Bearer synthetic-session','x-vercel-oidc-token':'synthetic-runtime-oidc'},body:{keyPoints:'MC: prueba'}},res);
+    assert.equal(res.statusCode,403);assert.match(res.body,/no autorizada/i);assert.equal(calls.length,2);assert.doesNotMatch(calls.join('\n'),/ai-gateway\.vercel\.sh/);
+  }finally{global.fetch=oldFetch}
 });
