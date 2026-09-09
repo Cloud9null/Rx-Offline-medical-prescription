@@ -21,4 +21,5 @@ No se agregan migraciones: se reutiliza `prescription_links` con RLS owner-only 
 
 - Unitarias/contratos: 31/31 PASS.
 - E2E sintético nuevo: receta directa → búsqueda → expediente → nota vinculada.
-- E2E Chromium y Preview Vercel: pendientes del CI del PR.
+- GitHub Actions: 31/31 unitarias y 7/7 E2E Chromium PASS.
+- Vercel Preview: Ready para el SHA del PR.

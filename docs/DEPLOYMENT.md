@@ -8,6 +8,7 @@
 - Acceso: `app_authorized_users` con RLS, un propietario habilitado y sin lectura anónima.
 - Storage: `rx-emr-private-v1`, privado, máximo 6 MB por JSON cifrado.
 - Frontend/API: Vercel Production; cada ajuste se valida primero mediante Preview.
+- Preview V3.4: Ready y protegido por Vercel Authentication; CI del mismo SHA en verde.
 
 No se necesita una rama Supabase facturable. El uso queda sujeto a las cuotas del plan existente.
 
