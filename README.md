@@ -1,4 +1,4 @@
-# Rx Offline EMR — V3.2
+# Rx Offline EMR — V3.3
 
 PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
 
@@ -14,7 +14,9 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Recuperación segura entre dispositivos mediante código aleatorio, PBKDF2-SHA-256 y sobre AES-GCM. El servidor nunca recibe la llave maestra ni el código en claro.
 - Supabase Auth/RLS y sincronización owner-only con cola, backoff y conflictos explícitos.
 - Acceso personal en dos capas: allowlist de propietario en Supabase y PIN/Face ID de la bóveda en cada dispositivo. El dominio público no permite crear una bóveda sin autorizar primero la cuenta.
+- Panel de dispositivos con sesiones reales de Supabase Auth, fecha/última actividad, red parcialmente enmascarada, revocación individual, cierre de todas las demás sesiones y desautorización local.
 - Navegación adaptativa: rail lateral persistente en escritorio y menú superior desplegable en móvil, sin barra inferior fija.
+- Efecto Liquid Glass progresivo en iPhone PWA, con fallback compatible para Android/Windows/web y respeto a `prefers-reduced-motion`.
 - Diecisiete paletas premium, incluidas dos variantes oscuras.
 - Instalación PWA en iPhone, iPad, Android y escritorio; bloqueo por PIN y Face ID/Touch ID mediante WebAuthn PRF cuando el navegador lo permite.
 
@@ -30,9 +32,9 @@ Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [back
 
 ## Backend compartido
 
-Las seis migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las dos últimas incorporan recuperación E2EE/documentos privados y una allowlist administrativa de acceso personal; no borran ni reescriben recetas, pacientes o notas existentes.
+Las siete migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las tres últimas incorporan recuperación E2EE/documentos privados, una allowlist administrativa y control de sesiones del propietario; no borran ni reescriben recetas, pacientes o notas existentes.
 
-El frontend V3.1 está integrado en `main` y desplegado en producción tras aprobación explícita. Los cambios posteriores deben volver a pasar por rama, Preview, pruebas y revisión.
+El frontend V3.2 está integrado en `main` y desplegado en producción tras aprobación explícita. V3.3 debe pasar por rama, Preview, pruebas y revisión antes de promoverse.
 
 ## IA generativa opcional
 
@@ -49,6 +51,7 @@ La función `/api/clinical-note` valida tanto la sesión Supabase como la allowl
 - Es una implementación técnica alineada por campos y controles; no constituye certificación NOM-024, homologación, e.firma/FIEL ni asesoría jurídica.
 - Los metadatos clínicos de tablas están protegidos por Auth/RLS, pero no tienen E2EE por campo. Los archivos y el paquete privado de recuperación sí usan E2EE del lado cliente.
 - La sesión Supabase histórica permanece en `localStorage` por compatibilidad.
+- La revocación corta el refresh token y la autorización online; un equipo desconectado no puede borrarse a distancia y conserva su bóveda cifrada protegida por PIN/biometría.
 - El código de recuperación no puede ser restituido por soporte. Debe guardarse fuera del dispositivo.
 - Toda nota estructurada o generada requiere juicio, edición y firma del profesional responsable.
 

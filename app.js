@@ -2,7 +2,7 @@
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const enc=new TextEncoder(), dec=new TextDecoder();
-const state={db:null,meta:null,vault:null,vaultKey:null,screen:'home',medSeq:0,profilePad:null,rxPad:null,lockTimer:null,hiddenAt:null,pendingEmit:null,cloudSyncTimer:null,cloudSyncAttempts:0,cloudUser:null,cloudReady:false,accessGranted:false,accessRole:null,accessOwnerHash:null,testAccess:false};
+const state={db:null,meta:null,vault:null,vaultKey:null,screen:'home',medSeq:0,profilePad:null,rxPad:null,lockTimer:null,accessCheckTimer:null,hiddenAt:null,pendingEmit:null,cloudSyncTimer:null,cloudSyncAttempts:0,cloudUser:null,cloudReady:false,accessGranted:false,accessRole:null,accessOwnerHash:null,accessSessionId:null,testAccess:false};
 let visibleRecoveryCode='';
 const themes=[
  {id:'midnightGold',name:'Midnight Gold',desc:'Azul noche + oro',primary:'#122f49',secondary:'#b7904b',accent:'#dfc27e',bg:'#f2f4f5',panel:'#ffffff',panel2:'#edf1f3',text:'#17212b',muted:'#697581',line:'#dbe2e6'},
@@ -54,6 +54,12 @@ function sexCode(v=''){const s=String(v||'').trim().toLowerCase();if(!s)return '
 function initials(name){return name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'PX'}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._timer);t._timer=setTimeout(()=>t.classList.remove('show'),2600)}
 function setStatus(el,msg,ok=false){el.textContent=msg;el.style.color=ok?'var(--success)':'var(--muted)'}
+function platformLabel(ua=''){
+  const s=String(ua);let device=/iPhone/i.test(s)?'iPhone':/iPad/i.test(s)?'iPad':/Android/i.test(s)?'Android':/Windows/i.test(s)?'Windows':/Macintosh|Mac OS X/i.test(s)?'Mac':'Dispositivo';
+  let browser=/Edg\//i.test(s)?'Edge':/CriOS|Chrome\//i.test(s)?'Chrome':/FxiOS|Firefox\//i.test(s)?'Firefox':/Safari\//i.test(s)&&!/Chrome|CriOS|Edg\//i.test(s)?'Safari':'Navegador';
+  return `${device} · ${browser}`;
+}
+function maskedIp(ip=''){const s=String(ip||'');if(!s)return '';if(s.includes('.')){const p=s.split('.');return p.length===4?`${p[0]}.${p[1]}.${p[2]}.×`:''}const p=s.split(':').filter(Boolean);return p.length?`${p.slice(0,3).join(':')}::`:'IPv6'}
 async function sha256Bytes(data){return new Uint8Array(await crypto.subtle.digest('SHA-256',data instanceof Uint8Array?data:enc.encode(data)))}
 async function ownerIdHash(userId){const digest=await sha256Bytes(`rx-owner-v1:${String(userId||'')}`);return b64url(digest)}
 async function derivePinKey(pin,salt){const base=await crypto.subtle.importKey('raw',enc.encode(pin),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt,iterations:250000},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
@@ -133,11 +139,22 @@ function showAuth(which){$('#accessView').classList.toggle('hidden',which!=='acc
 async function grantAccountAccess(access){
   if(!access?.user?.id)throw new Error('Supabase no devolvió una identidad válida.');
   const hash=await ownerIdHash(access.user.id);if(state.meta?.ownerIdHash&&state.meta.ownerIdHash!==hash)throw new Error('La bóveda de este dispositivo pertenece a otra cuenta.');
-  state.accessGranted=true;state.accessRole=access.role||'authorized';state.accessOwnerHash=hash;state.cloudUser=access.user;
+  state.accessGranted=true;state.accessRole=access.role||'authorized';state.accessOwnerHash=hash;state.accessSessionId=access.sessionId||window.RxCloud?.currentSessionId?.()||null;state.cloudUser=access.user;
   if(state.meta&&!state.meta.ownerIdHash){state.meta.ownerIdHash=hash;state.meta.deviceAuthorizedAt=new Date().toISOString();state.meta.version=Math.max(4,Number(state.meta.version||0));await dbPut('meta',state.meta)}
   return access.user;
 }
 async function validateCloudAccess(){const access=await window.RxCloud.authorizeUser();return grantAccountAccess(access)}
+async function deauthorizeCurrentDevice(message='Este dispositivo fue desautorizado.'){
+  clearTimeout(state.accessCheckTimer);clearTimeout(state.cloudSyncTimer);clearTimeout(state.lockTimer);
+  try{await window.RxCloud?.signOut?.('local')}catch{}
+  if(state.meta){state.meta.ownerIdHash=null;state.meta.deviceAuthorizedAt=null;await dbPut('meta',state.meta)}
+  window.RxEMR?.onLock?.();state.vault=null;state.vaultKey=null;state.cloudUser=null;state.accessGranted=false;state.accessRole=null;state.accessOwnerHash=null;state.accessSessionId=null;
+  showAuth('access');setStatus($('#accessStatus'),message);
+}
+function scheduleAccessCheck(){
+  clearTimeout(state.accessCheckTimer);if(!state.vault||!state.cloudUser)return;
+  state.accessCheckTimer=setTimeout(async()=>{if(!state.vault)return;if(navigator.onLine){try{await validateCloudAccess()}catch(err){if(err?.status===403)return deauthorizeCurrentDevice('La sesión de este dispositivo fue revocada. Inicia sesión nuevamente para autorizarlo.')}}scheduleAccessCheck()},60000);
+}
 async function resolveInitialAccess(){
   state.testAccess=(['localhost','127.0.0.1'].includes(location.hostname)&&new URLSearchParams(location.search).get('e2e')==='1');
   if(state.testAccess){state.accessGranted=true;state.accessRole='test';state.accessOwnerHash='local-e2e';return showAuth(state.meta?'unlock':'setup')}
@@ -183,12 +200,34 @@ function updateCloudUI(message=''){
   if(ownerStatus)ownerStatus.textContent=signed?`${state.cloudUser.email||'Cuenta privada'} · ${state.accessRole==='owner'?'propietario':'autorizada'}`:'Autorización guardada en este dispositivo';
   if(navUser)navUser.textContent=signed?(state.cloudUser.email||'Cuenta autorizada'):'Dispositivo autorizado · offline';
 }
+function renderSessionRows(rows=[]){
+  const list=$('#sessionList');if(!list)return;
+  if(!rows.length){list.innerHTML='<div class="empty-state compact">No se encontraron sesiones activas.</div>';return}
+  list.innerHTML=rows.map(row=>{const current=Boolean(row.is_current),network=maskedIp(row.ip_address);return `<article class="session-item ${current?'current':''}"><div class="session-icon">${/iPhone|iPad/i.test(row.user_agent||'')?'◉':/Android/i.test(row.user_agent||'')?'◇':'▣'}</div><div class="session-main"><div><strong>${esc(platformLabel(row.user_agent))}</strong>${current?'<span class="current-chip">Este dispositivo</span>':''}</div><small>Última actividad: ${esc(fmtDateTime(row.last_active_at||row.created_at))}${network?' · Red '+esc(network):''}</small><small>Inicio: ${esc(fmtDateTime(row.created_at))}</small></div>${current?'':`<button class="btn danger session-revoke" type="button" data-revoke-session="${esc(row.session_id)}">Revocar</button>`}</article>`}).join('');
+  list.querySelectorAll('[data-revoke-session]').forEach(button=>button.addEventListener('click',()=>revokeRemoteSession(button.dataset.revokeSession)));
+}
+async function refreshSessions(){
+  const status=$('#sessionStatus');if(!state.cloudUser)return setStatus(status,'Conecta la cuenta del propietario para consultar sesiones.');if(!navigator.onLine)return setStatus(status,'Necesitas conexión para consultar sesiones.');
+  setStatus(status,'Consultando sesiones protegidas…');
+  try{const rows=await window.RxCloud.listSessions();renderSessionRows(rows);setStatus(status,`${rows.length} sesión${rows.length===1?'':'es'} activa${rows.length===1?'':'s'}.`,true)}catch(err){setStatus(status,err.message||'No fue posible consultar las sesiones.')}
+}
+async function revokeRemoteSession(sessionId){
+  if(!confirm('¿Revocar esta sesión? El dispositivo perderá sincronización y acceso online al comprobar su autorización.'))return;
+  setStatus($('#sessionStatus'),'Revocando sesión…');
+  try{await window.RxCloud.revokeSession(sessionId);await refreshSessions();toast('Sesión remota revocada')}catch(err){setStatus($('#sessionStatus'),err.message||'No se pudo revocar la sesión.')}
+}
+async function signOutOtherSessions(){
+  if(!confirm('¿Cerrar todas las demás sesiones de Supabase y conservar únicamente este dispositivo?'))return;
+  setStatus($('#sessionStatus'),'Cerrando las demás sesiones…');
+  try{await window.RxCloud.signOutOthers();await refreshSessions();toast('Las demás sesiones fueron cerradas')}catch(err){setStatus($('#sessionStatus'),err.message||'No se pudieron cerrar las demás sesiones.')}
+}
 async function runCloudSync({quiet=false}={}){
   if(!state.vault||!window.RxCloud?.configured?.())return;
   try{
     const u=await window.RxCloud.user();state.cloudUser=u;updateCloudUI();
     if(!u){if(!quiet)toast('Inicia sesión en Supabase para sincronizar');return}
     await validateCloudAccess();
+    scheduleAccessCheck();
     setStatus($('#cloudSyncStatus'),'Probando sincronización con Supabase…');
     await ensureAllPublicTokens();
     await prepareEncryptedDocuments();
@@ -228,13 +267,13 @@ async function afterUnlock(){
   scheduleLock();
   await initCloudState();
   if(state.cloudUser){
-    try{await validateCloudAccess();setStatus($('#cloudSyncStatus'),'Sesión de nube restaurada · sincronizando…');if(navigator.onLine)await runCloudSync({quiet:true})}
+    try{await validateCloudAccess();scheduleAccessCheck();setStatus($('#cloudSyncStatus'),'Sesión de nube restaurada · sincronizando…');if(navigator.onLine)await runCloudSync({quiet:true})}
     catch(err){await window.RxCloud.signOut().catch(()=>{});state.cloudUser=null;updateCloudUI('Sesión de nube no autorizada; la bóveda local permanece protegida.');setStatus($('#cloudSyncStatus'),err.message)}
   }
 }
-function lock(){window.RxEMR?.onLock?.();state.vault=null;state.vaultKey=null;clearTimeout(state.lockTimer);$('#unlockPin').value='';$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric);closeNavigation();showAuth('unlock');}
+function lock(){window.RxEMR?.onLock?.();state.vault=null;state.vaultKey=null;clearTimeout(state.lockTimer);clearTimeout(state.accessCheckTimer);$('#unlockPin').value='';$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric);closeNavigation();showAuth('unlock');}
 function scheduleLock(){clearTimeout(state.lockTimer);const min=Number(state.vault?.settings?.lockTimeout||0);if(min>0)state.lockTimer=setTimeout(lock,min*60000)}
-function navigate(name){if(!state.vault)return;closeNavigation();state.screen=name;$$('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));$$('.bottom-nav button[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));const titles={home:'Inicio',patients:'Pacientes',emr:'Expediente clínico',encounter:'Consulta',rx:'Nueva receta',history:'Recetas',settings:'Ajustes'};$('#topSubtitle').textContent=titles[name]||'';if(name==='patients')renderPatients();if(name==='history')renderHistory();if(name==='emr')window.RxEMR?.renderDashboard?.();if(name==='rx')renderRxPatientOptions();if(name==='settings')renderSettings();window.scrollTo({top:0,behavior:'smooth'});}
+function navigate(name){if(!state.vault)return;closeNavigation();state.screen=name;$$('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));$$('.bottom-nav button[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));const titles={home:'Inicio',patients:'Pacientes',emr:'Expediente clínico',encounter:'Consulta',rx:'Nueva receta',history:'Recetas',settings:'Ajustes'};$('#topSubtitle').textContent=titles[name]||'';if(name==='patients')renderPatients();if(name==='history')renderHistory();if(name==='emr')window.RxEMR?.renderDashboard?.();if(name==='rx')renderRxPatientOptions();if(name==='settings'){renderSettings();refreshSessions()}window.scrollTo({top:0,behavior:'smooth'});}
 function renderAll(){renderCounts();renderPatients();renderRxPatientOptions();renderHistory();renderSettings();renderThemeGrid();renderLogoGrid();window.RxEMR?.renderDashboard?.();if(!$('#medicationList').children.length)addMedication();$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric);}
 function renderCounts(){$('#patientCount').textContent=state.vault.patients.filter(p=>!p.archived).length;$('#recipeCount').textContent=state.vault.recipes.length;window.RxEMR?.renderDashboard?.()}
 function patientSubtitle(p){const age=ageYears(p.dob);const dobTxt=p.dob?displayDob(p.dob):'F.N. no disponible';const sx=sexCode(p.sex)||'—';return `${dobTxt} · ${age===null?'Edad no disponible':age+' años'} · ${sx}${p.allergies?' · Alergias: '+p.allergies:''}`}
@@ -377,13 +416,15 @@ function bindEvents(){
   $('#cloudLoginBtn')?.addEventListener('click',async()=>{const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;if(!email||!password)return setStatus($('#cloudSyncStatus'),'Escribe correo y contraseña.');try{setStatus($('#cloudSyncStatus'),'Iniciando sesión…');await window.RxCloud.signIn(email,password);await validateCloudAccess();$('#cloudPassword').value='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Cuenta autorizada · sincronizando…',true);await runCloudSync({quiet:true});toast('Nube conectada y sincronizada')}catch(err){await window.RxCloud?.signOut?.().catch(()=>{});state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),err.message||'No se pudo iniciar sesión')}});
   $('#cloudLogoutBtn')?.addEventListener('click',async()=>{try{await window.RxCloud.signOut();state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),'Sesión de nube cerrada.');toast('Supabase desconectado en este dispositivo')}catch(err){setStatus($('#cloudSyncStatus'),err.message)}});
   $('#cloudSyncBtn')?.addEventListener('click',()=>runCloudSync({quiet:false}));
+  $('#refreshSessionsBtn')?.addEventListener('click',refreshSessions);$('#signOutOthersBtn')?.addEventListener('click',signOutOtherSessions);$('#deauthorizeDeviceBtn')?.addEventListener('click',async()=>{if(!confirm('¿Desautorizar este dispositivo? Necesitarás la cuenta Supabase y el PIN para volver a entrar. Tus datos cifrados locales no se borrarán.'))return;await deauthorizeCurrentDevice('Este dispositivo fue desautorizado correctamente. Los datos cifrados locales se conservaron.')});
   window.addEventListener('rx-cloud-auth',e=>{state.cloudUser=e.detail?.user||null;updateCloudUI()});
   ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{if(state.vault)scheduleLock()},{passive:true}));document.addEventListener('visibilitychange',()=>{if(document.hidden)state.hiddenAt=Date.now();else if(state.vault&&state.hiddenAt){const min=Number(state.vault.settings.lockTimeout||0);if(min>0&&Date.now()-state.hiddenAt>min*60000)lock();else scheduleLock();state.hiddenAt=null;}});
 }
+function initPlatformUi(){const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent),standalone=window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true;document.documentElement.classList.toggle('ios-device',ios);document.documentElement.classList.toggle('ios-pwa',ios&&standalone)}
 async function init(){
   if(!window.crypto?.subtle||!window.indexedDB){alert('Este navegador no ofrece las APIs criptográficas/almacenamiento necesarias. Usa Safari/Chrome moderno mediante HTTPS.');return;}
-  applyTheme('midnightGold');state.db=await openDb();state.meta=await dbGet('meta','setup');state.profilePad=new SignaturePad($('#profileSignatureCanvas'));state.rxPad=new SignaturePad($('#rxSignatureCanvas'));bindEvents();if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric);await resolveInitialAccess();
-  window.addEventListener('online',()=>{updateCloudUI();if(state.vault&&state.cloudUser)queueCloudSync()});window.addEventListener('offline',()=>updateCloudUI());
+  initPlatformUi();applyTheme('midnightGold');state.db=await openDb();state.meta=await dbGet('meta','setup');state.profilePad=new SignaturePad($('#profileSignatureCanvas'));state.rxPad=new SignaturePad($('#rxSignatureCanvas'));bindEvents();if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric);await resolveInitialAccess();
+  window.addEventListener('online',()=>{updateCloudUI();if(state.vault&&state.cloudUser){queueCloudSync();scheduleAccessCheck()}});window.addEventListener('offline',()=>updateCloudUI());
 }
 init().catch(err=>{console.error(err);alert('Error al iniciar Rx Offline: '+err.message)});
 })();
