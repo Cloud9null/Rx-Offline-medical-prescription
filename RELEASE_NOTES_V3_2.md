@@ -19,6 +19,6 @@ La migración aditiva `authorize_single_owner_access` quedó aplicada al mismo p
 
 - Sintaxis JavaScript: PASS.
 - Unitarias/contratos: 28/28 PASS.
-- El runner local no pudo descargar Chromium por timeout/502 del CDN; los cinco E2E quedan definidos para CI y validación remota de Preview.
+- El runner local no pudo descargar Chromium por timeout/502 del CDN; GitHub Actions instaló Chromium y confirmó los cinco E2E en verde sobre el commit del PR.
 
 No promover a producción hasta revisar el Preview y aprobarlo explícitamente.

@@ -6,12 +6,13 @@
 - `npm test`: **28/28 PASS**.
 - `git diff --check`: PASS.
 - Playwright local: Chromium no pudo descargarse por 502/timeout del CDN; no se sustituyó por una prueba falsa.
+- GitHub Actions `EMR preview CI` run 15: **5/5 E2E PASS** con Chromium sobre el SHA del PR.
 
 Cobertura: migración del vault, edad, IMC, canonicalización, validación, merge, contratos Rx/QR, receta-consulta, PWA, SQL/RLS/grants, bootstrap, E2EE, rechazo de ciphertext/código incorrectos, paquete privado, allowlist owner-only en frontend/API, minimización IA y texto plano.
 
 ## E2E del PR
 
-`clinical-flow.spec.js` usa datos sintéticos y cubre bóveda/perfil, paciente/consulta/autosave/asistente local, finalización/receta vinculada/timeline, receta directa, gate del enlace público y navegación escritorio/móvil. GitHub Actions instala Chromium y debe validar el SHA final.
+`clinical-flow.spec.js` usa datos sintéticos y cubre bóveda/perfil, paciente/consulta/autosave/asistente local, finalización/receta vinculada/timeline, receta directa, gate del enlace público y navegación escritorio/móvil. GitHub Actions instaló Chromium y validó el SHA del PR.
 
 ## Supabase
 
