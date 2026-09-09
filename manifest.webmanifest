@@ -1,7 +1,7 @@
 {
-  "name":"Rx Offline V2",
+  "name":"Rx Offline EMR",
   "short_name":"Rx Offline",
-  "description":"Prescripción médica local-first, cifrada y offline",
+  "description":"Expediente clínico y prescripción médica local-first, cifrada y offline",
   "start_url":"./",
   "scope":"./",
   "display":"standalone",

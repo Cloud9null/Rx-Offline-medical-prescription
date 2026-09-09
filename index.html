@@ -7,10 +7,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Rx Offline">
-  <meta name="description" content="Prescripción médica local-first y cifrada">
+  <meta name="description" content="Expediente clínico y prescripción médica local-first y cifrada">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="emr.css">
   <title>Rx Offline</title>
 </head>
 <body>
@@ -25,7 +26,19 @@
           <label>Confirmar<input id="setupPin2" type="password" autocomplete="new-password" required minlength="8" inputmode="numeric"></label>
           <button class="btn primary" type="submit">Crear bóveda cifrada</button>
         </form>
-        <p class="micro">No existe recuperación en servidor en esta versión. Guarda respaldos cifrados periódicamente.</p>
+        <div class="auth-separator"><span>o</span></div>
+        <button id="showRecoverySetupBtn" class="btn ghost full" type="button">Recuperar bóveda de otro dispositivo</button>
+        <form id="recoverySetup" class="stack recovery-setup hidden">
+          <div class="soft-callout"><strong>Recuperación E2EE</strong><p>Supabase conserva únicamente la llave cifrada. Necesitas tu cuenta y el código guardado fuera de línea.</p></div>
+          <label>Correo de Supabase<input id="recoveryEmail" type="email" autocomplete="username" required></label>
+          <label>Contraseña de Supabase<input id="recoveryPassword" type="password" autocomplete="current-password" required></label>
+          <label>Código de recuperación<input id="recoveryCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
+          <label>Nuevo PIN para este dispositivo<input id="recoveryNewPin" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label>Confirmar nuevo PIN<input id="recoveryNewPin2" type="password" autocomplete="new-password" minlength="8" required></label>
+          <button class="btn primary" type="submit">Recuperar y sincronizar</button>
+          <div id="recoverySetupStatus" class="inline-status" role="status"></div>
+        </form>
+        <p class="micro">Sin el código de recuperación o un respaldo cifrado, nadie puede reconstruir una bóveda perdida.</p>
       </div>
     </section>
 
@@ -50,11 +63,12 @@
       <main class="content">
         <section id="screen-home" class="screen active">
           <div class="hero-panel">
-            <div><span class="eyebrow">PRESCRIPCIÓN LOCAL-FIRST</span><h2>Recetas elegantes, cifradas y listas para imprimir.</h2><p>Pacientes, historial y firma permanecen en tu dispositivo hasta que decidas sincronizarlos en una versión posterior.</p></div>
-            <button class="btn primary hero-cta" data-nav="rx" type="button">＋ Nueva receta</button>
+            <div><span class="eyebrow">EXPEDIENTE + PRESCRIPCIÓN LOCAL-FIRST</span><h2>Atención clínica completa, privada y eficiente.</h2><p>Documenta la consulta o emite una receta directa. La bóveda local cifrada sigue siendo la fuente primaria del dispositivo.</p></div>
+            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button></div>
           </div>
           <div class="metric-grid">
             <button class="metric-card" data-nav="patients" type="button"><span>Pacientes</span><strong id="patientCount">0</strong><small>Alta y búsqueda local</small></button>
+            <button class="metric-card" data-nav="emr" type="button"><span>Consultas</span><strong id="encounterCount">0</strong><small id="draftCount">0 borradores</small></button>
             <button class="metric-card" data-nav="history" type="button"><span>Recetas</span><strong id="recipeCount">0</strong><small>Emitidas e inmutables</small></button>
             <button class="metric-card" data-nav="settings" type="button"><span>Seguridad</span><strong>Local</strong><small>AES-GCM + firma ECDSA</small></button>
           </div>
@@ -64,6 +78,22 @@
             <p class="muted">Genera una hoja tamaño carta con <strong>2 recetas media carta</strong> listas para llenar y firmar a mano. Incluye tu membrete y únicamente el QR de verificación de cédula profesional.</p>
             <button id="manualTemplateBtn" class="btn secondary full" type="button">Imprimir recetas manuales por lote</button>
           </div>
+        </section>
+
+        <section id="screen-emr" class="screen">
+          <div class="section-head"><div><span class="eyebrow">EXPEDIENTE CLÍNICO</span><h2>Actividad clínica</h2></div><button id="newEncounterBtn" class="btn primary" type="button">＋ Nueva consulta</button></div>
+          <div class="emr-dashboard-grid">
+            <div class="premium-card emr-stat"><small>Borradores</small><strong id="emrDraftMetric">0</strong><span>Guardado automático local</span></div>
+            <div class="premium-card emr-stat"><small>Notas finalizadas</small><strong id="emrFinalMetric">0</strong><span>Snapshot y firma criptográfica</span></div>
+            <div class="premium-card emr-stat"><small>Pacientes activos</small><strong id="emrPatientMetric">0</strong><span>Expediente longitudinal</span></div>
+          </div>
+          <div class="toolbar"><input id="emrSearch" class="search" placeholder="Buscar paciente, folio o motivo…"></div>
+          <div id="emrActivity" class="timeline-list"></div>
+          <div id="patientRecord" class="hidden"></div>
+        </section>
+
+        <section id="screen-encounter" class="screen">
+          <div id="encounterEditor"></div>
         </section>
 
         <section id="screen-patients" class="screen">
@@ -167,6 +197,14 @@
             <div id="bioStatus" class="inline-status"></div>
           </div>
 
+          <div class="premium-card recovery-card">
+            <div class="card-title"><span>◇</span><h3>Recuperación entre dispositivos</h3></div>
+            <p class="muted">Protege la llave de la bóveda y la identidad criptográfica con un código de alta entropía. Supabase nunca recibe el código ni la llave privada en texto claro.</p>
+            <div class="row-actions wrap"><button id="enableRecoveryBtn" class="btn secondary" type="button">Configurar recuperación</button></div>
+            <div id="recoveryStatus" class="inline-status"></div>
+            <p class="micro">Al generar un código nuevo, el anterior deja de recuperar futuras copias privadas. Guarda además respaldos cifrados periódicos.</p>
+          </div>
+
           <div class="premium-card">
             <div class="card-title"><span>⇩</span><h3>Respaldos cifrados</h3></div>
             <p class="muted">El respaldo contiene tu bóveda todavía cifrada. Para restaurarla necesitas el mismo PIN o contraseña.</p>
@@ -180,6 +218,7 @@
       <nav class="bottom-nav" aria-label="Navegación principal">
         <button data-nav="home" class="active" type="button"><span>⌂</span><small>Inicio</small></button>
         <button data-nav="patients" type="button"><span>♙</span><small>Pacientes</small></button>
+        <button data-nav="emr" type="button"><span>▤</span><small>Expediente</small></button>
         <button data-nav="rx" type="button"><span>℞</span><small>Receta</small></button>
         <button data-nav="history" type="button"><span>◷</span><small>Historial</small></button>
         <button data-nav="settings" type="button"><span>⚙</span><small>Ajustes</small></button>
@@ -187,9 +226,17 @@
     </section>
   </div>
 
-  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo<select id="patientSex"><option value="F">F</option><option value="M">M</option><option value="O">O</option></select></label></div><div id="patientAgeHint" class="micro">Edad calculada automáticamente: —</div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Niega alergias medicamentosas conocidas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
+  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo registrado<select id="patientSex"><option value="">Sin registrar</option><option value="F">Femenino</option><option value="M">Masculino</option><option value="O">Otro / no especificado</option></select></label></div><div id="patientAgeHint" class="micro">Edad calculada automáticamente: —</div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Dejar vacío significa información no confirmada; no equivale a alergias negadas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
 
   <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
+
+  <dialog id="encounterStartDialog" class="modal"><form id="encounterStartForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">NUEVA CONSULTA</span><h3>Selecciona el paciente</h3></div><button class="icon-btn" type="button" data-close-dialog="encounterStartDialog" aria-label="Cerrar">×</button></div><label>Paciente<select id="encounterPatient" required></select></label><div class="form-grid two"><label>Tipo de nota<select id="encounterType"><option value="first_visit">Primera vez</option><option value="follow_up">Subsecuente / evolución</option><option value="referral">Referencia / interconsulta</option></select></label><label>Fecha y hora<input id="encounterOccurredAt" type="datetime-local" required></label></div><p class="micro">La edad se calcula a la fecha de atención. No se crean notas vacías hasta confirmar.</p><div class="row-actions end"><button class="btn ghost" type="button" data-close-dialog="encounterStartDialog">Cancelar</button><button class="btn primary" type="submit">Abrir expediente</button></div></form></dialog>
+
+  <dialog id="clinicalProfileDialog" class="modal"><form id="clinicalProfileForm" class="modal-card emr-profile-form"><div class="modal-head"><div><span class="eyebrow">RESUMEN LONGITUDINAL</span><h3>Antecedentes y alertas</h3></div><button class="icon-btn" type="button" data-close-dialog="clinicalProfileDialog" aria-label="Cerrar">×</button></div><input id="clinicalProfilePatientId" type="hidden"><label>Estado de alergias<select id="allergyKnowledge"><option value="unknown">Información no confirmada</option><option value="known">Alergias registradas</option><option value="none_reported">Paciente niega alergias conocidas</option></select></label><label>Resumen visible de alergias<textarea id="clinicalAllergies" rows="2" placeholder="No se completa automáticamente"></textarea></label><div class="allergy-editor"><div class="section-head"><div><strong>Alergias estructuradas</strong><small>Sustancia, reacción, severidad y estado</small></div><button id="addAllergyBtn" class="btn small secondary" type="button">＋ Alergia</button></div><div id="allergyEditorList"></div></div><div class="form-grid two"><label>Heredofamiliares<textarea id="familyHistory" rows="3"></textarea></label><label>Personales patológicos<textarea id="pathologicalHistory" rows="3"></textarea></label><label>No patológicos<textarea id="nonPathologicalHistory" rows="3"></textarea></label><label>Quirúrgicos / hospitalizaciones<textarea id="surgicalHistory" rows="3"></textarea></label><label>Transfusiones<textarea id="transfusionHistory" rows="2"></textarea></label><label>Medicamentos actuales<textarea id="currentMedications" rows="2"></textarea></label><label>Inmunizaciones<textarea id="immunizations" rows="2"></textarea></label><label>Gineco-obstétricos, si procede<textarea id="gyneObHistory" rows="2"></textarea></label><label>Perinatales, si procede<textarea id="perinatalHistory" rows="2"></textarea></label></div><div class="row-actions end"><button class="btn ghost" type="button" data-close-dialog="clinicalProfileDialog">Cancelar</button><button class="btn primary" type="submit">Guardar antecedentes</button></div></form></dialog>
+
+  <dialog id="addendumDialog" class="modal"><form id="addendumForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">NOTA COMPLEMENTARIA</span><h3>Addendum inmutable</h3></div><button class="icon-btn" type="button" data-close-dialog="addendumDialog" aria-label="Cerrar">×</button></div><input id="addendumNoteId" type="hidden"><label>Motivo de la adición<input id="addendumReason" required maxlength="500"></label><label>Contenido<textarea id="addendumContent" required rows="7" maxlength="12000"></textarea></label><p class="micro">La nota original no será editada. El addendum tendrá autor, fecha, hash y firma propios.</p><div class="row-actions end"><button class="btn ghost" type="button" data-close-dialog="addendumDialog">Cancelar</button><button class="btn primary" type="submit">Firmar addendum</button></div></form></dialog>
+
+  <dialog id="recoveryCodeDialog" class="modal"><div class="modal-card recovery-code-modal"><div class="modal-head"><div><span class="eyebrow">CÓDIGO DE RECUPERACIÓN</span><h3>Guárdalo ahora</h3></div></div><p>Este código es la única forma de abrir la llave cifrada desde un dispositivo nuevo. No se volverá a mostrar y no debe enviarse por chat.</p><output id="recoveryCodeValue" class="recovery-code" aria-label="Código de recuperación"></output><div class="row-actions wrap"><button id="copyRecoveryCodeBtn" class="btn secondary" type="button">Copiar</button><button id="downloadRecoveryCodeBtn" class="btn ghost" type="button">Descargar .txt</button></div><label class="recovery-confirm"><input id="recoverySavedCheck" type="checkbox"> Confirmo que lo guardé fuera de línea</label><button id="closeRecoveryCodeBtn" class="btn primary full" type="button" disabled>Cerrar de forma segura</button></div></dialog>
 
   <dialog id="manualTemplateDialog" class="modal manual-template-dialog">
     <div class="modal-card manual-template-modal-card">
@@ -207,6 +254,10 @@
   <script src="supabase-config.js"></script>
   <script src="cloud.js"></script>
   <script src="qr.js"></script>
+  <script src="secure-sync.js"></script>
+  <script src="clinical-assistant.js"></script>
+  <script src="emr-core.js"></script>
+  <script src="emr.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

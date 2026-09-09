@@ -1,0 +1,8 @@
+node_modules/
+test-results/
+playwright-report/
+.vercel/
+supabase/.temp/
+.env*
+!.env.example
+*.local
