@@ -29,4 +29,4 @@ La migración aditiva `manage_owner_sessions` usa `auth.sessions` sin exponerla 
 - Lectura anónima del RPC: denegada.
 - Revocación de UUID inexistente/ajeno: sin efecto.
 - Pruebas unitarias/contratos locales: 30/30.
-- E2E Chromium y Preview: se registran en el PR final.
+- E2E Chromium: 6/6 PASS en GitHub Actions; Vercel Preview: Ready.
