@@ -92,3 +92,58 @@ test('settings exposes session controls without hiding local security',async({pa
   await expect(page.locator('#refreshSessionsBtn')).toBeVisible();await expect(page.locator('#signOutOthersBtn')).toBeVisible();await expect(page.locator('#deauthorizeDeviceBtn')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Bloqueo y biometría'})).toBeVisible();
 });
+
+test('direct prescription is searchable in the patient record and can seed a later note',async({page})=>{
+  page.on('dialog',d=>d.accept());
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-link-rx-123');
+  await page.locator('#setupPin2').fill('synthetic-link-rx-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await page.locator('#profileName').fill('Dra. Prueba Vinculación');
+  await page.locator('#profileLicense').fill('TEST-LINK-001');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  const canvas=page.locator('#profileSignatureCanvas');
+  await canvas.scrollIntoViewIfNeeded();
+  const box=await canvas.boundingBox();
+  await page.mouse.move(box.x+35,box.y+75);await page.mouse.down();await page.mouse.move(box.x+190,box.y+30,{steps:8});await page.mouse.up();
+  await page.locator('#saveProfileSignature').click();
+
+  await page.locator('#primaryNav [data-nav="patients"]').click();
+  await page.locator('#newPatientBtn').click();
+  await page.locator('#patientName').fill('Paciente Receta Previa');
+  await page.locator('#patientDob').fill('1988-07-18');
+  await page.locator('#patientSex').selectOption('M');
+  await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
+  await page.locator('[data-rx-patient]').click();
+
+  await page.locator('.m-name').fill('Ibuprofeno');
+  await page.locator('.m-strength').fill('400 mg tabletas');
+  await page.locator('.m-dose').fill('400 mg');
+  await page.locator('.m-frequency').fill('Cada 8 horas con alimentos');
+  await page.locator('.m-duration').fill('3 días');
+  await page.locator('#rxForm').getByRole('button',{name:'Emitir y sellar'}).click();
+  await page.locator('#confirmEmitBtn').click();
+  await expect(page.locator('#recipeDetail')).toContainText('Integridad local verificada');
+  const rxId=(await page.locator('.recipe-detail-head .eyebrow').textContent()).trim();
+
+  await page.locator('#historySearch').fill('Paciente Receta Previa');
+  await expect(page.locator('#historyList')).toContainText(rxId);
+  await page.locator(`[data-recipe="${rxId}"]`).click();
+  await page.locator('#openRecipePatientBtn').click();
+  await expect(page.locator('#patientRecord')).toContainText('Receta directa');
+  await expect(page.locator('#patientRecord')).toContainText('Recetas sin nota');
+  await expect(page.locator('#patientRecord')).toContainText('Ibuprofeno');
+
+  await page.locator(`[data-link-recipe="${rxId}"]`).click();
+  await expect(page.locator('#encounterSourceRx')).toHaveValue(rxId);
+  await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
+  await expect(page.locator('.linked-rx-banner')).toContainText('Receta previa vinculada');
+  await expect(page.locator('.linked-rx-banner')).toContainText(rxId);
+
+  await page.locator('#primaryNav [data-nav="patients"]').click();
+  await page.locator('[data-record-patient]').click();
+  await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
+  await expect(page.locator(`[data-link-recipe="${rxId}"]`)).toHaveCount(0);
+});

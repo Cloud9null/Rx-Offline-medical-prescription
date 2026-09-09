@@ -261,7 +261,7 @@ async function afterUnlock(){
   await migrateProfileDefaults();
   await prepareEncryptedDocuments();
   showAuth('main');
-  window.RxEMR?.init?.(state.vault,{save:saveVault,queueSync:queueCloudSync,toast,encryptDocument:(bytes,meta)=>window.RxSecureSync.encryptDocument(state.vaultKey,bytes,meta),decryptDocument:(box,meta)=>window.RxSecureSync.decryptDocument(state.vaultKey,box,meta),cloud:()=>window.RxCloud,openPatient:()=>openPatientDialog(),navigateRaw:navigate,openRxForPatient:id=>{navigate('rx');$('#rxPatient').value=id||'';updateSelectedPatient();}});
+  window.RxEMR?.init?.(state.vault,{save:saveVault,queueSync:queueCloudSync,toast,encryptDocument:(bytes,meta)=>window.RxSecureSync.encryptDocument(state.vaultKey,bytes,meta),decryptDocument:(box,meta)=>window.RxSecureSync.decryptDocument(state.vaultKey,box,meta),cloud:()=>window.RxCloud,openPatient:()=>openPatientDialog(),navigateRaw:navigate,openRxForPatient:id=>{navigate('rx');$('#rxPatient').value=id||'';updateSelectedPatient();},openRecipe:id=>{navigate('history');openRecipe(id);}});
   renderAll();
   navigate('home');
   scheduleLock();
@@ -343,7 +343,18 @@ function renderHistory(filter=''){
   }).join('');
   list.querySelectorAll('[data-recipe]').forEach(b=>b.addEventListener('click',()=>openRecipe(b.dataset.recipe)));
 }
-async function openRecipe(id){const rec=state.vault.recipes.find(r=>r.id===id);if(!rec)return;await ensureVerificationToken(rec);const ok=await verifyRecipeFixed(rec),d=$('#recipeDetail');d.classList.remove('hidden');d.innerHTML=`<div class="recipe-detail-card"><div class="recipe-detail-head"><div><span class="eyebrow">${esc(rec.id)}</span><h3 style="margin:5px 0">${esc(rec.patient.name)}</h3><div class="${ok?'seal-ok':'seal-void'}">${ok?'✓ Integridad local verificada':'⚠ El sello local no coincide'}</div></div><button class="icon-btn" type="button" id="closeRecipeDetail">×</button></div><div class="rx-preview-shell">${renderRxSheet(rec)}</div><div class="row-actions wrap"><button id="printRecipeBtn" class="btn primary" type="button">Imprimir / Guardar PDF</button><button id="duplicateRecipeBtn" class="btn secondary" type="button">Duplicar como nueva</button>${rec.status!=='void'?'<button id="voidRecipeBtn" class="btn danger" type="button">Anular receta</button>':''}</div><p class="micro">El QR de autenticidad abre un verificador público y muestra exactamente el contenido firmado al emitir. Si el PDF es alterado, la firma ya no coincidirá con ese contenido.</p></div>`;d.scrollIntoView({behavior:'smooth',block:'start'});$('#closeRecipeDetail').addEventListener('click',()=>d.classList.add('hidden'));$('#printRecipeBtn').addEventListener('click',()=>printRecipe(rec));$('#duplicateRecipeBtn').addEventListener('click',()=>duplicateRecipe(rec));$('#voidRecipeBtn')?.addEventListener('click',()=>voidRecipe(rec));}
+async function openRecipe(id){
+  const rec=state.vault.recipes.find(r=>r.id===id);if(!rec)return;
+  await ensureVerificationToken(rec);
+  const ok=await verifyRecipeFixed(rec),d=$('#recipeDetail');d.classList.remove('hidden');
+  d.innerHTML=`<div class="recipe-detail-card"><div class="recipe-detail-head"><div><span class="eyebrow">${esc(rec.id)}</span><h3 style="margin:5px 0">${esc(rec.patient.name)}</h3><div class="${ok?'seal-ok':'seal-void'}">${ok?'✓ Integridad local verificada':'⚠ El sello local no coincide'}</div></div><button class="icon-btn" type="button" id="closeRecipeDetail">×</button></div><div class="rx-preview-shell">${renderRxSheet(rec)}</div><div class="row-actions wrap"><button id="printRecipeBtn" class="btn primary" type="button">Imprimir / Guardar PDF</button><button id="openRecipePatientBtn" class="btn secondary" type="button">Abrir expediente del paciente</button><button id="duplicateRecipeBtn" class="btn secondary" type="button">Duplicar como nueva</button>${rec.status!=='void'?'<button id="voidRecipeBtn" class="btn danger" type="button">Anular receta</button>':''}</div><p class="micro">El QR de autenticidad abre un verificador público y muestra exactamente el contenido firmado al emitir. Si el PDF es alterado, la firma ya no coincidirá con ese contenido.</p></div>`;
+  d.scrollIntoView({behavior:'smooth',block:'start'});
+  $('#closeRecipeDetail').addEventListener('click',()=>d.classList.add('hidden'));
+  $('#printRecipeBtn').addEventListener('click',()=>printRecipe(rec));
+  $('#openRecipePatientBtn').addEventListener('click',()=>window.RxEMR?.openPatientRecord(rec.patient.id));
+  $('#duplicateRecipeBtn').addEventListener('click',()=>duplicateRecipe(rec));
+  $('#voidRecipeBtn')?.addEventListener('click',()=>voidRecipe(rec));
+}
 function manualLogoMarkup(style='monogram'){
   if(style==='crest')return '<div class="rx-logo-inner crest"><div class="rx-logo-shield">✚</div><div class="rx-logo-type"><span>Rx</span><small>CLINIC</small></div></div>';
   if(style==='minimal')return '<div class="rx-logo-inner minimal"><div class="rx-logo-mark thin">Rx</div><div class="rx-logo-type"><span>Dr</span><small>PRESCRIPTION</small></div></div>';

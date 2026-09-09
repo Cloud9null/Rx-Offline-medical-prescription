@@ -1,4 +1,4 @@
-# Rx Offline EMR — V3.3
+# Rx Offline EMR — V3.4
 
 PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
 
@@ -8,6 +8,7 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Borradores con autosave en una bóveda local AES-256-GCM.
 - Nota final inmutable con snapshot canónico, SHA-256, firma ECDSA P-256, autor y fecha; las correcciones se agregan como addenda firmados.
 - Receta electrónica offline conservada: firma, QR, verificación, impresión media carta, historial y anulación. Puede vincularse a una consulta o emitirse directamente.
+- Expediente longitudinal unificado: las recetas directas aparecen junto con consultas y notas, con folio, fecha, estado y medicamentos. Desde una receta se abre el expediente; una receta directa previa puede vincularse a una nueva nota sin modificar ni volver a firmar la receta.
 - Asistente clínico local que estructura puntos clave sin red y sin inventar datos; opción generativa externa con consentimiento explícito, sesión autenticada y payload minimizado.
 - Copiar, compartir o descargar la nota como `.txt` estándar. Estas funciones no intentan eludir políticas o restricciones de otro sistema.
 - Documentos PDF/JPEG/PNG cifrados antes de salir del dispositivo; Supabase Storage solo recibe ciphertext en un bucket privado owner-scoped.
@@ -28,13 +29,13 @@ npm test
 npm run test:e2e
 ```
 
-Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [backup y recuperación](docs/BACKUP_RESTORE.md), [privacidad de IA](docs/AI_PRIVACY.md) y el [reporte de pruebas](docs/TEST_REPORT.md).
+Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [backup y recuperación](docs/BACKUP_RESTORE.md), [privacidad de IA](docs/AI_PRIVACY.md), [preparación SaaS](docs/SAAS_READINESS.md) y el [reporte de pruebas](docs/TEST_REPORT.md).
 
 ## Backend compartido
 
 Las siete migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las tres últimas incorporan recuperación E2EE/documentos privados, una allowlist administrativa y control de sesiones del propietario; no borran ni reescriben recetas, pacientes o notas existentes.
 
-El frontend V3.2 está integrado en `main` y desplegado en producción tras aprobación explícita. V3.3 debe pasar por rama, Preview, pruebas y revisión antes de promoverse.
+El frontend V3.3 está integrado en `main` y desplegado en producción tras aprobación explícita. V3.4 debe pasar por rama, Preview, pruebas y revisión antes de promoverse.
 
 ## IA generativa opcional
 

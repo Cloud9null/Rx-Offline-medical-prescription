@@ -3,7 +3,7 @@
 ## Estado
 
 - Rama de producción: `main`.
-- Producción: V3.2; V3.3 requiere Preview y aprobación antes de promoverse.
+- Producción: V3.3; V3.4 requiere Preview y aprobación antes de promoverse.
 - Supabase: mismo proyecto gratuito; siete migraciones aditivas aplicadas.
 - Acceso: `app_authorized_users` con RLS, un propietario habilitado y sin lectura anónima.
 - Storage: `rx-emr-private-v1`, privado, máximo 6 MB por JSON cifrado.
@@ -35,7 +35,7 @@ El endpoint da prioridad a la conexión directa si existe `OPENAI_API_KEY`; de l
 7. PWA, modo avión/reconexión e impresión Rx.
 8. Aprobación explícita para merge/promoción.
 
-## Primer acceso y sesiones tras V3.3
+## Primer acceso y sesiones desde V3.3
 
 La contraseña del gate es la contraseña de **Supabase Auth** que ya se usa para sincronización; no es el PIN de la bóveda. En un navegador que ya tiene bóveda, inicia sesión una sola vez con la cuenta del propietario; el UID queda ligado criptográficamente al metadato local y después puede desbloquearse offline con PIN o biometría. En un dispositivo nuevo se exige primero esa cuenta y luego se crea o recupera la bóveda. No hay registro público.
 

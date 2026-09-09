@@ -24,6 +24,20 @@ test('prescription relation is external to the signed canonical payload',()=>{
   assert.match(emr,/prescriptionLinks\.push\(link\)/);
 });
 
+test('direct prescriptions remain searchable and can be linked retrospectively without resigning',()=>{
+  const app=read('app.js'),emr=read('emr.js'),html=read('index.html');
+  assert.match(app,/patientName\+' '\+id/);
+  assert.match(app,/openRecipePatientBtn/);
+  assert.match(html,/id="encounterSourceRx"/);
+  assert.match(emr,/unlinkedPatientPrescriptions\(patientId\)/);
+  assert.match(emr,/sourceRx\.patient\?\.id!==patientId/);
+  assert.match(emr,/prescriptionLinks\.some\(l=>l\.rxId===sourceRxId\)/);
+  assert.match(emr,/prescription\.linked_retroactively/);
+  assert.match(emr,/Recetas sin nota/);
+  assert.match(emr,/data-open-recipe/);
+  assert.match(emr,/data-link-recipe/);
+});
+
 test('PWA precaches every new EMR runtime asset',()=>{
   const sw=read('sw.js');
   for(const asset of ['emr.css','emr-core.js','emr.js','secure-sync.js','clinical-assistant.js'])assert.match(sw,new RegExp(asset.replace('.','\\.')));

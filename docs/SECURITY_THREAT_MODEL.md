@@ -30,6 +30,18 @@
 - Una revocación remota no puede borrar la bóveda de un equipo offline. Al volver a conectarse, la app comprueba la sesión; hasta entonces la protección efectiva es el cifrado local y su PIN/biometría.
 - Los archivos estáticos de una PWA son públicamente descargables; la protección cubre acceso funcional, datos y API, no pretende ocultar el código cliente.
 
+## Frontera exacta de cifrado
+
+| Datos | Protección actual | ¿E2EE? |
+|---|---|---|
+| Bóveda completa en cada dispositivo | AES-256-GCM con llave envuelta por PIN o WebAuthn PRF | Sí, en reposo local |
+| Documentos sincronizados | Cifrados en el navegador antes del upload; Storage recibe ciphertext | Sí |
+| Llave privada de firma y recuperación | Sobre AES-GCM derivado del código de recuperación y ligado al UID | Sí |
+| Pacientes, notas, signos vitales, diagnósticos y metadatos Rx sincronizados | HTTPS/TLS, Supabase Auth, grants y RLS por `user_id` | No por campo |
+| Firma y QR de receta | ECDSA/SHA-256 para integridad y autenticidad; el verificador revela el contenido incluido en el token | No es cifrado |
+
+Por lo tanto, el producto no debe anunciarse como E2EE integral. Convertir también las tablas clínicas a E2EE exige cifrado de campos en cliente, índices ciegos para búsquedas, llaves por organización y una migración controlada; además limita búsquedas, reportes e IA del lado servidor.
+
 ## Antes de producción
 
 Validar Preview en dos dispositivos con datos sintéticos; activar MFA y protección de contraseñas filtradas; aprobar aviso, ARCO, retención e incidentes; habilitar IA solo tras evaluación; revisar RLS, grants, dependencias y logs sanitizados.
