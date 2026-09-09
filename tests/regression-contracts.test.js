@@ -101,3 +101,24 @@ test('application and clinical AI both enforce the server-side owner allowlist',
   assert.match(html,/ACCESO RESTRINGIDO/);assert.doesNotMatch(html,/registrarse|crear cuenta/i);
   assert.match(app,/\['localhost','127\.0\.0\.1'\][\s\S]+get\('e2e'\)==='1'/);
 });
+
+test('session management exposes only owner-scoped inventory and revocation',()=>{
+  const sql=read('supabase/migrations/20260909184339_manage_owner_sessions.sql'),cloud=read('cloud.js'),html=read('index.html');
+  assert.match(sql,/private\.rx_current_session_is_active\(\)/i);
+  assert.match(sql,/s\.id = nullif\(auth\.jwt\(\)->>'session_id'/i);
+  assert.match(sql,/where s\.user_id = auth\.uid\(\)/i);
+  assert.match(sql,/delete from auth\.sessions[\s\S]+user_id = v_user_id/i);
+  assert.match(sql,/revoke all on function public\.rx_revoke_my_session\(uuid\) from public, anon/i);
+  assert.match(sql,/security definer[\s\S]+set search_path = ''/i);
+  assert.doesNotMatch(sql,/delete from public\.|truncate|drop table|on delete cascade/i);
+  assert.match(cloud,/logout\?scope=\$\{scope\}/);assert.match(cloud,/async function listSessions\(/);assert.match(cloud,/async function revokeSession\(/);
+  assert.match(html,/Dispositivos y sesiones/);assert.match(html,/Cerrar las demás/);assert.match(html,/Desautorizar este dispositivo/);
+});
+
+test('Liquid Glass is progressive and respects reduced motion',()=>{
+  const css=read('styles.css'),app=read('app.js'),html=read('index.html');
+  assert.match(css,/@supports \(\(-webkit-backdrop-filter/);assert.match(css,/@keyframes rxGlassSlide/);assert.match(css,/prefers-reduced-motion:reduce/);
+  assert.match(css,/min-height:100svh/);assert.match(css,/env\(safe-area-inset-top\)/);assert.match(html,/viewport-fit=cover/);
+  assert.match(html,/La misma que usas para sincronización; no es el PIN de la bóveda/);
+  assert.match(app,/display-mode: standalone/);assert.match(app,/ios-pwa/);
+});

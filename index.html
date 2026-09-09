@@ -24,7 +24,7 @@
         <p class="muted">El enlace público no concede acceso. Solo una cuenta incluida en la lista privada de Supabase puede autorizar este dispositivo.</p>
         <form id="accessForm" class="stack">
           <label>Correo autorizado<input id="accessEmail" type="email" autocomplete="username" required></label>
-          <label>Contraseña<input id="accessPassword" type="password" autocomplete="current-password" required></label>
+          <label>Contraseña de Supabase <small class="label-hint">La misma que usas para sincronización; no es el PIN de la bóveda.</small><input id="accessPassword" type="password" autocomplete="current-password" required></label>
           <button class="btn primary" type="submit">Autorizar este dispositivo</button>
         </form>
         <div id="accessStatus" class="inline-status" role="status"></div>
@@ -179,7 +179,7 @@
             <div class="owner-access-banner"><span>✓</span><div><strong>Dispositivo autorizado</strong><small id="ownerAccessStatus">Cuenta del propietario verificada</small></div></div>
             <p id="cloudStatus" class="muted">Comprobando configuración…</p>
             <div id="cloudLoginWrap" class="stack">
-              <div class="form-grid two"><label>Correo de Supabase Auth<input id="cloudEmail" type="email" autocomplete="username" placeholder="tu@email.com"></label><label>Contraseña<input id="cloudPassword" type="password" autocomplete="current-password"></label></div>
+              <div class="form-grid two"><label>Correo de Supabase Auth<input id="cloudEmail" type="email" autocomplete="username" placeholder="tu@email.com"></label><label>Contraseña de Supabase <small class="label-hint">Es la misma del acceso inicial; no es el PIN local.</small><input id="cloudPassword" type="password" autocomplete="current-password"></label></div>
               <button id="cloudLoginBtn" class="btn primary" type="button">Conectar cuenta de nube</button>
             </div>
             <div id="cloudSignedWrap" class="hidden">
@@ -188,6 +188,15 @@
             <div id="cloudSyncStatus" class="inline-status"></div>
             <div class="soft-callout cloud-local-note"><strong>Modo local-first activo.</strong> La app guarda primero en tu bóveda cifrada y, si tu sesión de Supabase está activa, sincroniza automáticamente cuando hay internet. Si la nube falla, la emisión local sigue disponible.</div>
             <p class="micro">La clave <strong>publishable/anon</strong> puede estar en frontend. Nunca pegues aquí una <strong>service_role</strong>. La bóveda local continúa cifrada aunque la nube no esté disponible.</p>
+          </div>
+
+          <div class="premium-card session-card">
+            <div class="card-title"><span>◉</span><h3>Dispositivos y sesiones</h3></div>
+            <p class="muted">Consulta dónde permanece iniciada tu cuenta. La lista usa las sesiones reales de Supabase Auth y muestra únicamente metadatos mínimos.</p>
+            <div class="row-actions wrap session-actions"><button id="refreshSessionsBtn" class="btn secondary" type="button">Actualizar sesiones</button><button id="signOutOthersBtn" class="btn ghost" type="button">Cerrar las demás</button><button id="deauthorizeDeviceBtn" class="btn danger" type="button">Desautorizar este dispositivo</button></div>
+            <div id="sessionStatus" class="inline-status" role="status"></div>
+            <div id="sessionList" class="session-list"><div class="empty-state compact">Abre este panel con conexión para consultar tus sesiones.</div></div>
+            <div class="soft-callout session-note"><strong>Qué hace la revocación</strong><p>Detiene el refresh token y el acceso de la app al siguiente control online. Un dispositivo offline conserva su bóveda local cifrada y todavía exige PIN o biometría; no es posible borrar remotamente datos que nunca salen del equipo.</p></div>
           </div>
 
           <div class="premium-card">

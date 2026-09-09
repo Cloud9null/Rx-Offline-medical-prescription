@@ -1,4 +1,4 @@
-const CACHE='rx-offline-emr-v3-20260909-03';
+const CACHE='rx-offline-emr-v3-20260909-04';
 const CORE=['./','./index.html','./styles.css','./emr.css','./app.js','./emr-core.js','./emr.js','./cloud.js','./secure-sync.js','./clinical-assistant.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest'];
 const OPTIONAL=['./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(async c=>{await c.addAll(CORE);await Promise.allSettled(OPTIONAL.map(x=>c.add(x)))}).then(()=>self.skipWaiting())));

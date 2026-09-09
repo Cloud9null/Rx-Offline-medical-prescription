@@ -83,3 +83,12 @@ test('desktop uses a persistent side rail and mobile uses a top dropdown',async(
   await expect(page.locator('#primaryNav')).toBeHidden();
   await expect(page.locator('#screen-patients')).toHaveClass(/active/);
 });
+
+test('settings exposes session controls without hiding local security',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-sessions-123');await page.locator('#setupPin2').fill('synthetic-sessions-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await expect(page.getByRole('heading',{name:'Dispositivos y sesiones'})).toBeVisible();
+  await expect(page.locator('#refreshSessionsBtn')).toBeVisible();await expect(page.locator('#signOutOthersBtn')).toBeVisible();await expect(page.locator('#deauthorizeDeviceBtn')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Bloqueo y biometría'})).toBeVisible();
+});
