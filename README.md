@@ -33,7 +33,7 @@ El frontend V3.1 está integrado en `main` y desplegado en producción tras apro
 
 ## IA generativa opcional
 
-El estructurador local funciona sin red ni secretos. En Vercel, la función puede usar AI Gateway con el token OIDC efímero inyectado por la plataforma; no es necesario copiar una llave al cliente ni al repositorio. Variables opcionales:
+El estructurador local funciona sin red ni secretos. En Vercel, la función puede usar AI Gateway con el token OIDC efímero inyectado por la plataforma (encabezado en runtime o variable durante build); no es necesario copiar una llave al cliente ni al repositorio. Variables opcionales:
 
 - `AI_GATEWAY_CLINICAL_MODEL` — por defecto `openai/gpt-5-mini`.
 - `AI_GATEWAY_API_KEY` — respaldo si el despliegue no dispone de OIDC.

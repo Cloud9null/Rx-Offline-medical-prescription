@@ -8,9 +8,10 @@ const schema={type:'object',additionalProperties:false,required:['sections','dia
 function send(res,status,body){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store, private');res.setHeader('X-Content-Type-Options','nosniff');res.end(JSON.stringify(body))}
 async function authenticate(token){if(!token)return false;const response=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token}`}});return response.ok}
 function outputText(payload){if(typeof payload?.output_text==='string')return payload.output_text;for(const item of payload?.output||[])for(const content of item?.content||[])if(content?.type==='output_text'&&content.text)return content.text;return ''}
-function providerConfig(){
+function providerConfig(req={headers:{}}){
   if(process.env.OPENAI_API_KEY)return {kind:'openai',url:'https://api.openai.com/v1/responses',token:process.env.OPENAI_API_KEY,model:process.env.OPENAI_CLINICAL_MODEL||'gpt-5-mini'};
-  const token=process.env.AI_GATEWAY_API_KEY||process.env.VERCEL_OIDC_TOKEN;
+  const runtimeOidc=Array.isArray(req.headers?.['x-vercel-oidc-token'])?req.headers['x-vercel-oidc-token'][0]:req.headers?.['x-vercel-oidc-token'];
+  const token=process.env.AI_GATEWAY_API_KEY||runtimeOidc||process.env.VERCEL_OIDC_TOKEN;
   if(token)return {kind:'vercel-ai-gateway',url:'https://ai-gateway.vercel.sh/v1/responses',token,model:process.env.AI_GATEWAY_CLINICAL_MODEL||'openai/gpt-5-mini'};
   return null;
 }
@@ -27,7 +28,7 @@ function providerError(status){
 }
 
 module.exports=async function handler(req,res){
-  const provider=providerConfig();
+  const provider=providerConfig(req);
   if(req.method==='GET')return send(res,200,{ok:true,externalAI:Boolean(provider),provider:provider?.kind||'disabled',model:provider?.model||null});
   if(req.method!=='POST')return send(res,405,{error:'Método no permitido.'});
   const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
