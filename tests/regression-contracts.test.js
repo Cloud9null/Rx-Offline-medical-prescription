@@ -26,8 +26,21 @@ test('prescription relation is external to the signed canonical payload',()=>{
 
 test('PWA precaches every new EMR runtime asset',()=>{
   const sw=read('sw.js');
-  for(const asset of ['emr.css','emr-core.js','emr.js'])assert.match(sw,new RegExp(asset.replace('.','\\.')));
+  for(const asset of ['emr.css','emr-core.js','emr.js','secure-sync.js','clinical-assistant.js'])assert.match(sw,new RegExp(asset.replace('.','\\.')));
   assert.doesNotMatch(sw,/localStorage\.clear|indexedDB\.deleteDatabase/);
+});
+
+test('E2EE migration creates private owner-scoped storage without destructive SQL',()=>{
+  const sql=read('supabase/migrations/20260909060646_e2ee_documents_and_key_recovery.sql');
+  assert.match(sql,/create table if not exists public\.vault_key_envelopes/i);assert.match(sql,/rx-emr-private-v1/);assert.match(sql,/false,6291456,array\['application\/json'\]/i);assert.match(sql,/storage\.foldername\(name\)\)\[1\] = \(select auth\.uid\(\)\)::text/i);assert.match(sql,/revoke delete on public\.vault_key_envelopes from authenticated/i);assert.doesNotMatch(sql,/drop table|truncate|delete from|on delete cascade/i);
+});
+
+test('clinical AI endpoint is authenticated, no-store and never exposes the provider key',()=>{
+  const api=read('api/clinical-note.js'),emr=read('emr.js');assert.match(api,/\/auth\/v1\/user/);assert.match(api,/store:false/);assert.match(api,/process\.env\.OPENAI_API_KEY/);assert.doesNotMatch(emr,/OPENAI_API_KEY/);assert.match(emr,/identifiersSent:false/);
+});
+
+test('document payloads upload only encrypted content and cloud metadata strips ciphertext',()=>{
+  const cloud=read('cloud.js'),emr=read('emr.js');assert.match(emr,/encryptDocument\(new Uint8Array/);assert.match(cloud,/delete safe\.encryptedContent/);assert.match(cloud,/storagePut\(path,doc\.encryptedContent/);assert.doesNotMatch(cloud,/storagePut\(path,doc\.dataUrl/);
 });
 
 test('migration is additive, owner-scoped and keeps anon away from clinical tables',()=>{

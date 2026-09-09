@@ -26,7 +26,19 @@
           <label>Confirmar<input id="setupPin2" type="password" autocomplete="new-password" required minlength="8" inputmode="numeric"></label>
           <button class="btn primary" type="submit">Crear bóveda cifrada</button>
         </form>
-        <p class="micro">No existe recuperación en servidor en esta versión. Guarda respaldos cifrados periódicamente.</p>
+        <div class="auth-separator"><span>o</span></div>
+        <button id="showRecoverySetupBtn" class="btn ghost full" type="button">Recuperar bóveda de otro dispositivo</button>
+        <form id="recoverySetup" class="stack recovery-setup hidden">
+          <div class="soft-callout"><strong>Recuperación E2EE</strong><p>Supabase conserva únicamente la llave cifrada. Necesitas tu cuenta y el código guardado fuera de línea.</p></div>
+          <label>Correo de Supabase<input id="recoveryEmail" type="email" autocomplete="username" required></label>
+          <label>Contraseña de Supabase<input id="recoveryPassword" type="password" autocomplete="current-password" required></label>
+          <label>Código de recuperación<input id="recoveryCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required></label>
+          <label>Nuevo PIN para este dispositivo<input id="recoveryNewPin" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label>Confirmar nuevo PIN<input id="recoveryNewPin2" type="password" autocomplete="new-password" minlength="8" required></label>
+          <button class="btn primary" type="submit">Recuperar y sincronizar</button>
+          <div id="recoverySetupStatus" class="inline-status" role="status"></div>
+        </form>
+        <p class="micro">Sin el código de recuperación o un respaldo cifrado, nadie puede reconstruir una bóveda perdida.</p>
       </div>
     </section>
 
@@ -185,6 +197,14 @@
             <div id="bioStatus" class="inline-status"></div>
           </div>
 
+          <div class="premium-card recovery-card">
+            <div class="card-title"><span>◇</span><h3>Recuperación entre dispositivos</h3></div>
+            <p class="muted">Protege la llave de la bóveda y la identidad criptográfica con un código de alta entropía. Supabase nunca recibe el código ni la llave privada en texto claro.</p>
+            <div class="row-actions wrap"><button id="enableRecoveryBtn" class="btn secondary" type="button">Configurar recuperación</button></div>
+            <div id="recoveryStatus" class="inline-status"></div>
+            <p class="micro">Al generar un código nuevo, el anterior deja de recuperar futuras copias privadas. Guarda además respaldos cifrados periódicos.</p>
+          </div>
+
           <div class="premium-card">
             <div class="card-title"><span>⇩</span><h3>Respaldos cifrados</h3></div>
             <p class="muted">El respaldo contiene tu bóveda todavía cifrada. Para restaurarla necesitas el mismo PIN o contraseña.</p>
@@ -216,6 +236,8 @@
 
   <dialog id="addendumDialog" class="modal"><form id="addendumForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">NOTA COMPLEMENTARIA</span><h3>Addendum inmutable</h3></div><button class="icon-btn" type="button" data-close-dialog="addendumDialog" aria-label="Cerrar">×</button></div><input id="addendumNoteId" type="hidden"><label>Motivo de la adición<input id="addendumReason" required maxlength="500"></label><label>Contenido<textarea id="addendumContent" required rows="7" maxlength="12000"></textarea></label><p class="micro">La nota original no será editada. El addendum tendrá autor, fecha, hash y firma propios.</p><div class="row-actions end"><button class="btn ghost" type="button" data-close-dialog="addendumDialog">Cancelar</button><button class="btn primary" type="submit">Firmar addendum</button></div></form></dialog>
 
+  <dialog id="recoveryCodeDialog" class="modal"><div class="modal-card recovery-code-modal"><div class="modal-head"><div><span class="eyebrow">CÓDIGO DE RECUPERACIÓN</span><h3>Guárdalo ahora</h3></div></div><p>Este código es la única forma de abrir la llave cifrada desde un dispositivo nuevo. No se volverá a mostrar y no debe enviarse por chat.</p><output id="recoveryCodeValue" class="recovery-code" aria-label="Código de recuperación"></output><div class="row-actions wrap"><button id="copyRecoveryCodeBtn" class="btn secondary" type="button">Copiar</button><button id="downloadRecoveryCodeBtn" class="btn ghost" type="button">Descargar .txt</button></div><label class="recovery-confirm"><input id="recoverySavedCheck" type="checkbox"> Confirmo que lo guardé fuera de línea</label><button id="closeRecoveryCodeBtn" class="btn primary full" type="button" disabled>Cerrar de forma segura</button></div></dialog>
+
   <dialog id="manualTemplateDialog" class="modal manual-template-dialog">
     <div class="modal-card manual-template-modal-card">
       <div class="modal-head"><div><span class="eyebrow">CONTINGENCIA / RECETA A MANO</span><h3>Dos recetas media carta por hoja</h3></div><button id="closeManualTemplateBtn" class="icon-btn" type="button" aria-label="Cerrar">×</button></div>
@@ -232,6 +254,8 @@
   <script src="supabase-config.js"></script>
   <script src="cloud.js"></script>
   <script src="qr.js"></script>
+  <script src="secure-sync.js"></script>
+  <script src="clinical-assistant.js"></script>
   <script src="emr-core.js"></script>
   <script src="emr.js"></script>
   <script src="app.js"></script>

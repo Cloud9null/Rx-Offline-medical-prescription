@@ -3,6 +3,7 @@
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const enc=new TextEncoder(), dec=new TextDecoder();
 const state={db:null,meta:null,vault:null,vaultKey:null,screen:'home',medSeq:0,profilePad:null,rxPad:null,lockTimer:null,hiddenAt:null,pendingEmit:null,cloudSyncTimer:null,cloudSyncAttempts:0,cloudUser:null,cloudReady:false};
+let visibleRecoveryCode='';
 const themes=[
  {id:'midnightGold',name:'Midnight Gold',desc:'Azul noche + oro',primary:'#122f49',secondary:'#b7904b',accent:'#dfc27e',bg:'#f2f4f5',panel:'#ffffff',panel2:'#edf1f3',text:'#17212b',muted:'#697581',line:'#dbe2e6'},
  {id:'oxfordPearl',name:'Oxford Pearl',desc:'Oxford + perla',primary:'#243b53',secondary:'#8ea3b5',accent:'#c7d1da',bg:'#f5f7f9',panel:'#ffffff',panel2:'#eef2f5',text:'#16212c',muted:'#6c7883',line:'#dce3e8'},
@@ -39,6 +40,7 @@ function unb64(s){const x=atob(s),a=new Uint8Array(x.length);for(let i=0;i<x.len
 function b64url(bytes){return b64(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
 function randomBytes(n){const a=new Uint8Array(n);crypto.getRandomValues(a);return a}
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+async function copyText(value){try{await navigator.clipboard.writeText(String(value));return true}catch{const area=document.createElement('textarea');area.value=String(value);area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const ok=document.execCommand('copy');area.remove();if(!ok)throw new Error('El navegador bloqueó el portapapeles.');return true}}
 function fmtDate(iso){try{return new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(iso))}catch{return iso}}
 function fmtDateTime(iso){try{return new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(iso))}catch{return iso}}
 function ageYears(dob){if(!dob)return null;const [y,m,d]=dob.split('-').map(Number),now=new Date();let age=now.getFullYear()-y;const md=now.getMonth()+1,dd=now.getDate();if(md<m||(md===m&&dd<d))age--;return age}
@@ -63,6 +65,35 @@ async function setupVault(pin){
   state.meta={id:'setup',version:2,salt:b64(salt),wrappedVaultKey:wrapped,biometric:null,createdAt:new Date().toISOString()};
   state.vaultKey=vaultKey;state.vault={profile:{name:'',role:'Medicina General',license:'',university:'Universidad del Valle de Mexico',address:'Heron Ramirez #680, Reynosa Tamaulipas C.P 88630. MEX',phone:'',email:'',signature:null},patients:[],recipes:[],settings:{theme:'midnightGold',logoStyle:'monogram',lockTimeout:5,profileDataVersion:26},signing:{privateJwk,publicJwk,keyFingerprint:fingerprint}};
   await dbPut('meta',state.meta);await saveVault();if(navigator.storage?.persist)try{await navigator.storage.persist()}catch{}
+}
+async function wrapVaultKeyForPin(vaultKey,pin){const raw=await crypto.subtle.exportKey('raw',vaultKey),salt=randomBytes(16),pinKey=await derivePinKey(pin,salt),wrapped=await encryptRaw(pinKey,new Uint8Array(raw));return {salt:b64(salt),wrappedVaultKey:wrapped}}
+function dataUrlBytes(dataUrl){const match=String(dataUrl||'').match(/^data:([^;,]+);base64,(.+)$/);if(!match)throw new Error('Adjunto local inválido.');return unb64(match[2])}
+async function prepareEncryptedDocuments(){
+  if(!state.vaultKey||!window.RxSecureSync)return;const docs=state.vault?.emr?.documents||[];let changed=false;
+  for(const doc of docs){if(doc.encryptedContent)continue;if(doc.dataUrl){doc.encryptedContent=await window.RxSecureSync.encryptDocument(state.vaultKey,dataUrlBytes(doc.dataUrl),doc);delete doc.dataUrl;doc.storage='local_e2ee_v1';doc.updatedAt=doc.updatedAt||doc.createdAt||new Date().toISOString();changed=true}}
+  if(changed)await saveVault();
+}
+function privateVaultPayload(){return {format:'rx-vault-private-payload-v1',profile:state.vault.profile||{},signing:state.vault.signing||{},settings:state.vault.settings||{},createdAt:new Date().toISOString()}}
+async function syncVaultSecret(){
+  const recovery=state.vault?.settings?.recovery;if(!recovery?.enabled||!state.cloudUser||!window.RxSecureSync)return;
+  const currentKeyId=await window.RxSecureSync.keyId(state.vaultKey);if(recovery.keyId!==currentKeyId)throw new Error('La llave local no coincide con la recuperación activa. Recupera la bóveda antes de sincronizar datos privados.');
+  const secret=await window.RxSecureSync.encryptSecretBundle(state.vaultKey,privateVaultPayload(),state.cloudUser.id);await window.RxCloud.uploadVaultSecret(secret);
+}
+async function enableCloudRecovery(){
+  const user=await window.RxCloud?.user?.();if(!user)throw new Error('Conecta primero tu cuenta de Supabase.');if(!navigator.onLine)throw new Error('Necesitas conexión para configurar recuperación.');
+  const code=window.RxSecureSync.generateRecoveryCode(),envelope=await window.RxSecureSync.createRecoveryEnvelope(state.vaultKey,code,user.id),secret=await window.RxSecureSync.encryptSecretBundle(state.vaultKey,privateVaultPayload(),user.id);
+  await window.RxCloud.saveRecoveryEnvelope(envelope);await window.RxCloud.uploadVaultSecret(secret);state.vault.settings.recovery={enabled:true,keyId:envelope.keyId,updatedAt:new Date().toISOString()};await saveVault();visibleRecoveryCode=code;renderRecoveryState();$('#recoveryCodeValue').textContent=code;$('#recoverySavedCheck').checked=false;$('#closeRecoveryCodeBtn').disabled=true;$('#recoveryCodeDialog').showModal();
+}
+async function recoverCloudVault(e){
+  e.preventDefault();const email=$('#recoveryEmail').value.trim(),password=$('#recoveryPassword').value,code=$('#recoveryCode').value,newPin=$('#recoveryNewPin').value,confirmPin=$('#recoveryNewPin2').value;
+  if(!email||!password||!code)return setStatus($('#recoverySetupStatus'),'Completa correo, contraseña y código de recuperación.');if(newPin.length<8)return setStatus($('#recoverySetupStatus'),'El nuevo PIN debe tener al menos 8 caracteres.');if(newPin!==confirmPin)return setStatus($('#recoverySetupStatus'),'Los PIN nuevos no coinciden.');
+  setStatus($('#recoverySetupStatus'),'Validando cuenta y recuperando la llave cifrada…');
+  try{
+    const user=await window.RxCloud.signIn(email,password),envelope=await window.RxCloud.loadRecoveryEnvelope(),vaultKey=await window.RxSecureSync.unwrapRecoveryEnvelope(envelope,code,user.id),secretEnvelope=await window.RxCloud.downloadVaultSecret(),secret=await window.RxSecureSync.decryptSecretBundle(vaultKey,secretEnvelope,user.id),pinBox=await wrapVaultKeyForPin(vaultKey,newPin);
+    if(secret?.format!=='rx-vault-private-payload-v1'||!secret?.signing?.privateJwk)throw new Error('El respaldo privado no contiene la identidad de firma.');
+    state.meta={id:'setup',version:3,...pinBox,biometric:null,createdAt:new Date().toISOString(),recoveredAt:new Date().toISOString()};state.vaultKey=vaultKey;state.vault={profile:secret.profile||{},patients:[],recipes:[],settings:{...(secret.settings||{}),recovery:{enabled:true,keyId:envelope.keyId,updatedAt:envelope.createdAt||new Date().toISOString()}},signing:secret.signing};
+    await dbPut('meta',state.meta);await saveVault();$('#recoveryPassword').value=$('#recoveryCode').value=$('#recoveryNewPin').value=$('#recoveryNewPin2').value='';await afterUnlock();toast('Bóveda e identidad recuperadas; sincronización en curso');
+  }catch(err){setStatus($('#recoverySetupStatus'),err.message||'No se pudo recuperar la bóveda. No se modificaron datos locales.')}
 }
 async function unlockWithPin(pin){const pinKey=await derivePinKey(pin,unb64(state.meta.salt));const raw=await decryptRaw(pinKey,state.meta.wrappedVaultKey),key=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},true,['encrypt','decrypt']);const vault=await loadVault(key);state.vaultKey=key;state.vault=vault;}
 async function hkdfAes(secret){const base=await crypto.subtle.importKey('raw',secret,'HKDF',false,['deriveKey']);return crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt:new Uint8Array(32),info:enc.encode('rx-offline-v2-biometric')},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
@@ -124,6 +155,8 @@ async function runCloudSync({quiet=false}={}){
     if(!u){if(!quiet)toast('Inicia sesión en Supabase para sincronizar');return}
     setStatus($('#cloudSyncStatus'),'Probando sincronización con Supabase…');
     await ensureAllPublicTokens();
+    await prepareEncryptedDocuments();
+    await syncVaultSecret();
     const syncResult=await window.RxCloud.syncVault(state.vault,canonicalPayload);
     for(const rec of state.vault.recipes||[]){if(rec?.seal?.publicToken)rec.seal.cloudRegistered=true}
     state.cloudSyncAttempts=0;await saveVault();renderAll();updateCloudUI();
@@ -149,8 +182,9 @@ function queueCloudSync(){
 async function afterUnlock(){
   applyTheme(state.vault.settings.theme);
   await migrateProfileDefaults();
+  await prepareEncryptedDocuments();
   showAuth('main');
-  window.RxEMR?.init?.(state.vault,{save:saveVault,queueSync:queueCloudSync,toast,openPatient:()=>openPatientDialog(),navigateRaw:navigate,openRxForPatient:id=>{navigate('rx');$('#rxPatient').value=id||'';updateSelectedPatient();}});
+  window.RxEMR?.init?.(state.vault,{save:saveVault,queueSync:queueCloudSync,toast,encryptDocument:(bytes,meta)=>window.RxSecureSync.encryptDocument(state.vaultKey,bytes,meta),decryptDocument:(box,meta)=>window.RxSecureSync.decryptDocument(state.vaultKey,box,meta),cloud:()=>window.RxCloud,openPatient:()=>openPatientDialog(),navigateRaw:navigate,openRxForPatient:id=>{navigate('rx');$('#rxPatient').value=id||'';updateSelectedPatient();}});
   renderAll();
   navigate('home');
   scheduleLock();
@@ -279,7 +313,8 @@ async function printManualTemplate(){
 async function printRecipe(rec){clearManualPrintMode();await ensureVerificationToken(rec);$('#printArea').innerHTML=renderRxSheet(rec);setTimeout(()=>window.print(),80)}
 function duplicateRecipe(rec){navigate('rx');$('#rxPatient').value=rec.patient.id;updateSelectedPatient();$('#rxGeneral').value=rec.general||'';$('#medicationList').innerHTML='';state.medSeq=0;rec.medications.forEach(m=>addMedication(m));toast('Receta copiada como borrador nuevo')}
 async function voidRecipe(rec){const reason=prompt('Motivo breve de anulación (opcional):','');if(reason===null)return;rec.status='void';rec.voidedAt=new Date().toISOString();rec.voidReason=reason.trim();await saveVault();renderHistory();queueCloudSync();toast('Receta anulada; el registro original se conserva')}
-function renderSettings(){const p=state.vault.profile;$('#profileName').value=p.name||'';$('#profileRole').value=p.role||'Medicina General';$('#profileLicense').value=p.license||'';$('#profileUniversity').value=p.university||'Universidad del Valle de Mexico';$('#profileAddress').value=p.address||'Heron Ramirez #680, Reynosa Tamaulipas C.P 88630. MEX';$('#profilePhone').value=p.phone||'';$('#profileEmail').value=p.email||'';$('#lockTimeout').value=String(state.vault.settings.lockTimeout??5);if(p.signature&&!state.profilePad.dirty)state.profilePad.load(p.signature);$('#enableBiometricBtn').textContent=state.meta.biometric?'Reconfigurar':'Activar';$('#bioStatus').textContent=state.meta.biometric?'Biometría configurada para este dominio/dispositivo.':'';renderLogoGrid();updateStorageStatus();updateCloudUI();}
+function renderRecoveryState(){const enabled=!!state.vault?.settings?.recovery?.enabled,button=$('#enableRecoveryBtn'),status=$('#recoveryStatus');if(button)button.textContent=enabled?'Generar nuevo código':'Configurar recuperación';if(status)status.textContent=enabled?'Recuperación cifrada activa. El código no se guarda en este dispositivo; consérvalo fuera de línea.':'Todavía no configurada. Sin el respaldo o código, una bóveda perdida no puede recuperarse.'}
+function renderSettings(){const p=state.vault.profile;$('#profileName').value=p.name||'';$('#profileRole').value=p.role||'Medicina General';$('#profileLicense').value=p.license||'';$('#profileUniversity').value=p.university||'Universidad del Valle de Mexico';$('#profileAddress').value=p.address||'Heron Ramirez #680, Reynosa Tamaulipas C.P 88630. MEX';$('#profilePhone').value=p.phone||'';$('#profileEmail').value=p.email||'';$('#lockTimeout').value=String(state.vault.settings.lockTimeout??5);if(p.signature&&!state.profilePad.dirty)state.profilePad.load(p.signature);$('#enableBiometricBtn').textContent=state.meta.biometric?'Reconfigurar':'Activar';$('#bioStatus').textContent=state.meta.biometric?'Biometría configurada para este dominio/dispositivo.':'';renderLogoGrid();renderRecoveryState();updateStorageStatus();updateCloudUI();}
 async function saveProfile(e){e.preventDefault();Object.assign(state.vault.profile,{name:$('#profileName').value.trim(),role:$('#profileRole').value.trim(),license:$('#profileLicense').value.trim(),university:$('#profileUniversity').value.trim(),address:$('#profileAddress').value.trim(),phone:$('#profilePhone').value.trim(),email:$('#profileEmail').value.trim()});await saveVault();queueCloudSync();toast('Perfil médico guardado')}
 async function saveProfileSignature(){const data=state.profilePad.data();if(!data)return toast('Dibuja primero tu firma.');state.vault.profile.signature=data;await saveVault();queueCloudSync();toast('Firma guardada localmente')}
 async function updateStorageStatus(){const el=$('#storageStatus');try{const e=await navigator.storage?.estimate?.();const persistent=await navigator.storage?.persisted?.();if(e){const used=(e.usage/1024/1024).toFixed(1),quota=(e.quota/1024/1024).toFixed(0);el.textContent=`Uso aproximado: ${used} MB de ${quota} MB. Persistencia del navegador: ${persistent?'sí':'no/indeterminada'}.`}else el.textContent='IndexedDB cifrado en este navegador. Exporta respaldos periódicos.';}catch{el.textContent='IndexedDB cifrado en este navegador. Exporta respaldos periódicos.'}}
@@ -287,6 +322,7 @@ async function exportBackup(){const payload=await dbGet('vault','payload'),meta=
 async function importBackup(file){const text=await file.text(),obj=JSON.parse(text);if(obj.format!=='rx-offline-v2-backup'||!obj.meta?.wrappedVaultKey||!obj.payload?.data)throw new Error('Archivo de respaldo no válido.');if(!confirm('Esto reemplazará la bóveda local de este dispositivo. ¿Continuar?'))return;obj.meta.id='setup';obj.meta.biometric=null;obj.payload.id='payload';await dbPut('meta',obj.meta);await dbPut('vault',obj.payload);alert('Respaldo importado. La app se reiniciará; desbloquéala con el PIN del respaldo.');location.reload()}
 function bindEvents(){
   $('#setupForm').addEventListener('submit',async e=>{e.preventDefault();const p=$('#setupPin').value,p2=$('#setupPin2').value;if(p.length<8)return toast('Usa al menos 8 caracteres.');if(p!==p2)return toast('Los PIN no coinciden.');try{await setupVault(p);$('#setupPin').value=$('#setupPin2').value='';afterUnlock();toast('Bóveda creada')}catch(err){toast('No se pudo crear: '+err.message)}});
+  $('#showRecoverySetupBtn')?.addEventListener('click',()=>$('#recoverySetup').classList.toggle('hidden'));$('#recoverySetup')?.addEventListener('submit',recoverCloudVault);
   $('#unlockForm').addEventListener('submit',async e=>{e.preventDefault();setStatus($('#unlockMsg'),'Desbloqueando…');try{await unlockWithPin($('#unlockPin').value);$('#unlockPin').value='';afterUnlock();setStatus($('#unlockMsg'),'')}catch{setStatus($('#unlockMsg'),'PIN/contraseña incorrecta o bóveda dañada.')}});
   $('#biometricUnlockBtn').addEventListener('click',async()=>{setStatus($('#unlockMsg'),'Solicitando biometría…');try{await unlockBiometric();afterUnlock();setStatus($('#unlockMsg'),'')}catch(err){setStatus($('#unlockMsg'),err.message)}});
   $('#lockBtn').addEventListener('click',lock);$$('[data-nav]').forEach(b=>b.addEventListener('click',()=>b.dataset.nav==='rx'?window.RxEMR?.directPrescription?.():navigate(b.dataset.nav)));
@@ -297,6 +333,7 @@ function bindEvents(){
   $('#historySearch').addEventListener('input',e=>renderHistory(e.target.value));$('#profileForm').addEventListener('submit',saveProfile);$('#clearProfileSignature').addEventListener('click',()=>state.profilePad.clear());$('#saveProfileSignature').addEventListener('click',()=>saveProfileSignature());
   $('#lockTimeout').addEventListener('change',async e=>{state.vault.settings.lockTimeout=Number(e.target.value);await saveVault();scheduleLock();toast('Bloqueo automático actualizado')});
   $('#enableBiometricBtn').addEventListener('click',async()=>{setStatus($('#bioStatus'),'Preparando biometría…');try{await enableBiometric();setStatus($('#bioStatus'),'Face ID / Touch ID configurado para este dominio.',true);$('#enableBiometricBtn').textContent='Reconfigurar';toast('Biometría activada')}catch(err){setStatus($('#bioStatus'),err.message)}});
+  $('#enableRecoveryBtn')?.addEventListener('click',async()=>{setStatus($('#recoveryStatus'),'Creando paquete de recuperación E2EE…');try{await enableCloudRecovery();setStatus($('#recoveryStatus'),'Recuperación cifrada activa.',true)}catch(err){setStatus($('#recoveryStatus'),err.message)}});$('#recoverySavedCheck')?.addEventListener('change',e=>{$('#closeRecoveryCodeBtn').disabled=!e.target.checked});$('#closeRecoveryCodeBtn')?.addEventListener('click',()=>{visibleRecoveryCode='';$('#recoveryCodeValue').textContent='';$('#recoveryCodeDialog').close()});$('#copyRecoveryCodeBtn')?.addEventListener('click',async()=>{if(!visibleRecoveryCode)return;try{await copyText(visibleRecoveryCode);toast('Código copiado; guárdalo en un lugar seguro')}catch(err){toast(err.message)}});$('#downloadRecoveryCodeBtn')?.addEventListener('click',()=>{if(!visibleRecoveryCode)return;const blob=new Blob([`RX OFFLINE EMR — CÓDIGO DE RECUPERACIÓN\n\n${visibleRecoveryCode}\n\nGuárdalo fuera de línea. No lo envíes por chat ni correo.\n`],{type:'text/plain'}),a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='rx-offline-codigo-recuperacion.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
   $('#exportBackupBtn').addEventListener('click',()=>exportBackup().catch(err=>toast(err.message)));$('#importBackupInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await importBackup(f)}catch(err){toast(err.message)}finally{e.target.value=''}});
   $('#cloudLoginBtn')?.addEventListener('click',async()=>{const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;if(!email||!password)return setStatus($('#cloudSyncStatus'),'Escribe correo y contraseña.');try{setStatus($('#cloudSyncStatus'),'Iniciando sesión…');state.cloudUser=await window.RxCloud.signIn(email,password);$('#cloudPassword').value='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Supabase Auth conectado · sincronizando…',true);await runCloudSync({quiet:true});toast('Nube conectada y sincronizada')}catch(err){setStatus($('#cloudSyncStatus'),err.message||'No se pudo iniciar sesión')}});
   $('#cloudLogoutBtn')?.addEventListener('click',async()=>{try{await window.RxCloud.signOut();state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),'Sesión de nube cerrada.');toast('Supabase desconectado en este dispositivo')}catch(err){setStatus($('#cloudSyncStatus'),err.message)}});

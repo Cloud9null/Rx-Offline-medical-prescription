@@ -1,45 +1,24 @@
-# Reporte de pruebas — V3 preview
+# Reporte de pruebas — V3.1 preview
 
-## Ejecutadas
+## Local
 
-- `node --check`: `app.js`, `cloud.js`, `emr.js`, `emr-core.js`, `verify.js`: PASS.
-- `npm test`: 14/14 PASS.
+- `node --check` del runtime y API: PASS.
+- `npm test`: **23/23 PASS**.
 - `git diff --check`: PASS.
+- Playwright local: Chromium no pudo descargarse por 502/timeout del CDN; no se sustituyó por una prueba falsa.
 
-Cobertura funcional automatizada: migración aditiva del vault, edad pediátrica a fecha de atención, JSON canónico estable, validación mínima, IMC/alertas, conflicto final/draft, presencia de `renderHistory`, firma/QR/SEP/manuales/anulación, vínculo externo al payload Rx, assets PWA, propiedades de RLS/migración, grants mínimos, bootstrap seguro e índices/políticas legacy optimizados.
+Cobertura: migración del vault, edad, IMC, canonicalización, validación, merge, contratos Rx/QR, receta-consulta, PWA, SQL/RLS/grants, bootstrap, E2EE, rechazo de ciphertext/código incorrectos, paquete privado, minimización IA y texto plano.
 
-## E2E remoto
+## E2E del PR
 
-`tests/e2e/clinical-flow.spec.js` cubre:
+`clinical-flow.spec.js` usa datos sintéticos y cubre bóveda/perfil, paciente/consulta/autosave/asistente local, finalización/receta vinculada/timeline y receta directa. GitHub Actions instala Chromium y debe validar el SHA final.
 
-1. bóveda sintética;
-2. perfil/firma;
-3. paciente;
-4. consulta y autosave;
-5. finalización/firma;
-6. receta vinculada;
-7. timeline;
-8. receta directa sin encounter.
+## Supabase
 
-GitHub Actions `EMR preview CI`: la rama ejecuta unit/regression y E2E Chromium en cada push. El último resultado y SHA deben tomarse de los checks del PR para evitar dejar un identificador obsoleto en este documento.
+Las cinco migraciones aditivas terminan con `20260909060646_e2ee_documents_and_key_recovery`. Esta última dejó `vault_key_envelopes` con RLS y 0 filas, bucket privado de 6 MB, tres políticas owner-only de tabla y tres de objetos, y 0 objetos durante la inspección. No se usaron datos reales.
 
-Vercel reportó el deployment de ese commit como **Ready**. El preview tiene protección de autenticación de Vercel, por lo que la inspección pública anónima redirige a SSO.
+No hubo hallazgos Advisor nuevos para E2EE. Persisten warnings conocidos de RPC legacy y leaked-password protection. Índices EMR `unused` son esperables antes del uso real.
 
-## Límites de validación
+## Validación manual pendiente
 
-En el contenedor local, la descarga de Chromium recibió 502/timeout y `agent-browser` no pudo iniciar sin browser. La ejecución equivalente sí se completó en GitHub Actions con Chromium instalado.
-
-## Verificación Supabase compartido
-
-Con autorización explícita se aplicaron cuatro migraciones aditivas al proyecto existente, sin crear una rama facturable:
-
-- `20260907193602 emr_integrado_v3`
-- `20260907194052 harden_emr_grants_and_indexes`
-- `20260907194549 enable_safe_legacy_bootstrap`
-- `20260907195054 optimize_legacy_rls`
-
-Resultados: 12/12 tablas EMR con RLS owner-only; rol anónimo sin lectura ni RPC EMR; usuario autenticado con lectura solamente de sus registros; identidad sintética ajena obtuvo 0 perfiles, 0 pacientes y 0 recetas. Una escritura completa por `emr_sync_bundle` se validó dentro de una transacción y se revirtió. Después de la prueba quedaron 0 encounters y 0 clinical_notes.
-
-Los conteos legacy permanecieron en 3 pacientes, 13 recetas y 13 verificaciones. Los hashes de `rx_cloud_healthcheck`, `rx_sync_bundle` y `verify_prescription` permanecieron idénticos al baseline.
-
-Security Advisor no reporta hallazgos nuevos de EMR. Conserva advertencias legacy por los tres RPC de recetas `SECURITY DEFINER` —su ejecución es parte del contrato actual— y por protección de contraseñas filtradas desactivada. Performance Advisor ya no reporta RLS initplan ni FK sin índice; los índices EMR vacíos aparecen como `unused`, esperado antes de uso real.
+Antes de `main`: Safari/iPhone PWA, Face ID en dominio definitivo, recuperación real, documentos sintéticos, impresión, red intermitente y revisión clínica/jurídica.

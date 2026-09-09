@@ -1,15 +1,31 @@
-# Backup, restauración y rollback
+# Backup, recuperación y rollback
 
-## Backup local cifrado
+## Backup local
 
-`Ajustes → Exportar respaldo` descarga `meta` y el ciphertext de la bóveda. V3 incluye todo `vault.emr` automáticamente. El archivo no contiene la clave en claro; requiere el PIN/contraseña original.
+`Ajustes → Exportar respaldo` descarga metadatos y ciphertext de la bóveda. Incluye EMR, Rx, documentos presentes e identidad criptográfica; requiere el PIN original.
 
-Prueba recomendada trimestral: exportar, abrir un perfil nuevo de navegador sin datos reales, importar, desbloquear, verificar una receta histórica y una nota final, y destruir el perfil de prueba.
+## Activar recuperación segura
 
-## Rollback de aplicación
+1. Inicia sesión en Supabase y sincroniza.
+2. En Seguridad, elige **Activar/renovar recuperación**.
+3. Copia o descarga el código mostrado una sola vez y guárdalo fuera del dispositivo.
+4. Confirma que lo guardaste. La app y Supabase no conservan el código en claro.
 
-La fuente segura anterior es `main@3ba287db255cac4e1b0589229027ba7bcec6b373`. Como V3 no cambia IndexedDB ni re-firma recetas, volver al build anterior deja los datos `vault.emr` sin interpretar pero no los borra. No exportar/importar entre versiones sin conservar antes una copia cifrada.
+Renovar reemplaza el sobre anterior sin recifrar documentos.
 
-## Rollback de base
+## Recuperar en otro dispositivo
 
-La migración es aditiva y no debe revertirse eliminando tablas mientras existan notas. En staging se puede descartar la rama completa. En producción, deshabilitar primero el feature EMR, exportar y validar registros; cualquier retiro de tablas requiere plan de retención y aprobación explícita.
+1. En el inicio elige **Recuperar bóveda de otro dispositivo**.
+2. Introduce cuenta Supabase, código y un PIN local nuevo.
+3. La app valida el sobre owner-only, reconstruye la llave en memoria y crea un nuevo envoltorio local.
+4. Sincroniza y verifica una receta, una nota final y un documento antes de retirar el equipo anterior.
+
+No envíes contraseña o código por chat. Si se pierde el código y no queda dispositivo desbloqueable ni backup, el contenido E2EE no es recuperable por diseño.
+
+## Dominio y biometría
+
+El PIN y el código siguen funcionando al cambiar de equipo. Face ID/Touch ID mediante WebAuthn está ligado al dominio y debe activarse otra vez al pasar de Preview al dominio definitivo.
+
+## Rollback
+
+La referencia anterior es `main@3ba287db255cac4e1b0589229027ba7bcec6b373`. V3.1 no re-firma recetas históricas. Las migraciones son aditivas: no elimines tablas, bucket u objetos mientras existan registros. Cualquier retiro requiere exportación, retención y aprobación.

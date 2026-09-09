@@ -1,34 +1,35 @@
 # Despliegue controlado
 
-## Precondiciones
+## Estado
 
-- No usar datos reales.
-- No colocar `service_role`, contraseña DB ni tokens en GitHub/cliente.
-- No ejecutar migraciones destructivas ni modificar datos existentes.
-- No promover `main` ni el frontend productivo sin aprobación explícita.
+- Rama: `feat/emr-integrado-v3`.
+- Producción: `main` intacta.
+- Supabase: mismo proyecto gratuito; cinco migraciones aditivas aplicadas.
+- Storage: `rx-emr-private-v1`, privado, máximo 6 MB por JSON cifrado.
+- Frontend/API: Preview de Vercel mediante el PR.
 
-## Estado actual
+No se necesita una rama Supabase facturable. El uso queda sujeto a las cuotas del plan existente.
 
-Por decisión del propietario se reutiliza el proyecto Supabase existente para evitar el costo de una rama. Ya están aplicadas, en orden, las cuatro migraciones de `supabase/migrations/`. Fueron verificadas con RLS, grants, Advisors, lectura autenticada owner-only, identidad ajena y smoke transaccional revertido.
+## Variables
 
-El frontend V3 está en `feat/emr-integrado-v3` y debe desplegarse únicamente como Preview de Vercel. GitHub Actions ejecuta:
+Nunca incluir `service_role`, contraseña DB ni tokens administrativos en cliente o Git. Solo para IA externa, configura privadamente en Vercel:
 
-```bash
-npm ci
-npm test
-npm run test:e2e
+```text
+OPENAI_API_KEY=<secreto>
+OPENAI_CLINICAL_MODEL=gpt-5-mini
 ```
 
-No se requieren nuevas variables secretas de frontend. La publishable key no es administrativa; la `service_role` está prohibida en la PWA.
+Sin la llave, el asistente local funciona y el endpoint externo responde 503 sin perder el borrador.
 
-Antes de promover producción, validar manualmente en el Preview: impresión Rx 8.5×5.5, nota A4, offline/reconexión, addendum, anulación, restauración en segundo navegador y flujo directo de receta sin nota.
+## Gate de promoción
 
-## Orden de release futuro
+1. Unit/regression y E2E Chromium en verde para el SHA final.
+2. Dos identidades sintéticas sin lectura cruzada.
+3. Restauración en segundo navegador con código y PIN nuevo.
+4. Upload/download de PDF/JPEG/PNG.
+5. Nota local/IA opcional, final, addendum y texto plano.
+6. Receta vinculada y receta directa; QR/verificador/anulación.
+7. PWA, modo avión/reconexión e impresión Rx.
+8. Aprobación explícita para merge/promoción.
 
-1. Backup/restore verificado por el propietario.
-2. Checks del PR y smoke del Preview en verde.
-3. Aprobación explícita para merge/promoción.
-4. Promover el artefacto preview exacto.
-5. Monitorear errores sin registrar PHI.
-
-El merge y redeploy productivo requieren aprobación explícita del propietario.
+No registrar prompts, notas, tokens, códigos o cuerpos de Storage. Monitorear solo estado, latencia, versión, agregados y errores sanitizados.

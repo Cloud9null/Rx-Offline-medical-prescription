@@ -2,6 +2,7 @@
 'use strict';
 const cfg=window.RX_SUPABASE_CONFIG||{};
 const SESSION_KEY='rxOfflineSupabaseSessionV1';
+const PRIVATE_BUCKET='rx-emr-private-v1';
 let currentUser=null;
 let session=null;
 function configured(){return /^https:\/\/.+\.supabase\.co$/i.test(String(cfg.url||''))&&String(cfg.publishableKey||'').length>20&&!String(cfg.publishableKey).includes('PASTE_')}
@@ -21,6 +22,24 @@ async function signIn(email,password){if(!configured())throw new Error('Supabase
 async function signOut(){const token=await accessToken();if(token&&navigator.onLine){try{await request(base()+'/auth/v1/logout',{method:'POST',headers:apiHeaders(token)})}catch{}}saveSession(null)}
 async function user(){if(!configured())return null;if(!session)session=loadStoredSession();if(!session)return null;if(!navigator.onLine){currentUser=session.user||null;return currentUser}return authUser()}
 async function rpc(name,params={},requireAuth=true){let token=requireAuth?await accessToken():null;if(requireAuth&&!token)throw new Error('Inicia sesión en Supabase primero.');const doCall=t=>request(base()+'/rest/v1/rpc/'+encodeURIComponent(name),{method:'POST',headers:apiHeaders(t,{'Content-Type':'application/json'}),body:JSON.stringify(params)});try{return await doCall(token)}catch(err){if(requireAuth&&err.status===401&&session?.refresh_token){await refreshSession();token=await accessToken();return doCall(token)}throw err}}
+function encodePath(path){return String(path||'').split('/').map(encodeURIComponent).join('/')}
+async function storagePut(path,value,{upsert=false}={}){const token=await accessToken();if(!token)throw new Error('Inicia sesión en Supabase primero.');return request(`${base()}/storage/v1/object/${PRIVATE_BUCKET}/${encodePath(path)}`,{method:'POST',headers:apiHeaders(token,{'Content-Type':'application/json','x-upsert':upsert?'true':'false'}),body:JSON.stringify(value)})}
+async function storageGet(path){const token=await accessToken();if(!token)throw new Error('Inicia sesión en Supabase primero.');return request(`${base()}/storage/v1/object/authenticated/${PRIVATE_BUCKET}/${encodePath(path)}`,{headers:apiHeaders(token,{'Cache-Control':'no-store'})})}
+function ownerPath(suffix){if(!currentUser?.id)throw new Error('Sesión Supabase requerida.');return `${currentUser.id}/${suffix}`}
+async function saveRecoveryEnvelope(envelope){const token=await accessToken();if(!token||!currentUser?.id)throw new Error('Inicia sesión en Supabase primero.');const rows=await request(`${base()}/rest/v1/vault_key_envelopes?on_conflict=user_id`,{method:'POST',headers:apiHeaders(token,{'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify({user_id:currentUser.id,key_id:envelope.keyId,envelope,updated_at:new Date().toISOString()})});return rows?.[0]||null}
+async function loadRecoveryEnvelope(){const token=await accessToken();if(!token)throw new Error('Inicia sesión en Supabase primero.');const rows=await request(`${base()}/rest/v1/vault_key_envelopes?select=key_id,envelope,updated_at&limit=1`,{headers:apiHeaders(token,{'Cache-Control':'no-store'})});if(!rows?.[0]?.envelope)throw new Error('Esta cuenta todavía no tiene recuperación cifrada configurada.');return rows[0].envelope}
+async function uploadVaultSecret(envelope){return storagePut(ownerPath('vault/secret.json'),envelope,{upsert:true})}
+async function downloadVaultSecret(){return storageGet(ownerPath('vault/secret.json'))}
+async function syncDocumentUploads(vault){
+  const docs=vault.emr?.documents||[];let uploaded=0;
+  for(const doc of docs){if(!doc?.encryptedContent||doc.objectPath)continue;const path=ownerPath(`documents/${doc.id}.json`);try{await storagePut(path,doc.encryptedContent,{upsert:false})}catch(err){const duplicate=err.status===409||/already.?exists|duplicate/i.test(`${err.message||''} ${JSON.stringify(err.body||{})}`);if(!duplicate)throw err}doc.objectPath=path;doc.storage='cloud_e2ee_v1';doc.cloudUpdatedAt=new Date().toISOString();doc.updatedAt=doc.updatedAt||doc.createdAt;uploaded++}
+  return uploaded;
+}
+async function syncDocumentDownloads(vault){
+  const docs=vault.emr?.documents||[];let downloaded=0;
+  for(const doc of docs){if(doc?.encryptedContent||!doc?.objectPath)continue;try{doc.encryptedContent=await storageGet(doc.objectPath);doc.storage='cloud_e2ee_v1';downloaded++}catch(err){doc.downloadError=err.message||String(err)}}
+  return downloaded;
+}
 function stripProfile(vault){const profile={...(vault.profile||{})};delete profile.signature;return profile}
 function localPatientTime(p){return Date.parse(p?.updatedAt||p?.createdAt||0)||0}
 function mergeBundle(vault,bundle){
@@ -35,7 +54,7 @@ function emrBundle(vault){
   const src=vault.emr||{};
   const names=['encounters','clinicalNotes','noteVersions','diagnoses','observations','allergies','medications','orders','documents','consents','prescriptionLinks','auditEvents'];
   const out={};for(const name of names)out[name]=Array.isArray(src[name])?src[name]:[];
-  out.documents=out.documents.map(d=>{const safe={...d};delete safe.dataUrl;safe.updatedAt=safe.updatedAt||safe.createdAt;return safe});
+  out.documents=out.documents.map(d=>{const safe={...d};delete safe.dataUrl;delete safe.encryptedContent;delete safe.downloadError;safe.updatedAt=safe.updatedAt||safe.createdAt;return safe});
   return out;
 }
 function mergeEmrBundle(vault,bundle){
@@ -85,9 +104,11 @@ async function syncVault(vault,canonicalFactory){
   try{bundle=await rpc('rx_sync_bundle',params,true)}catch(err){throw new Error(`Sincronización RPC: ${err.message}`)}
   if(!bundle?.ok)throw new Error('Supabase respondió sin confirmar la sincronización.');
   mergeBundle(vault,bundle);
+  const documentsUploaded=await syncDocumentUploads(vault);
   const emrResult=await syncEmr(vault);
-  return {user:u,bundle,emrResult};
+  const documentsDownloaded=await syncDocumentDownloads(vault);
+  return {user:u,bundle,emrResult,documentsUploaded,documentsDownloaded};
 }
 async function syncRecipe(rec,vault,canonicalFactory){return syncVault(vault,canonicalFactory)}
-window.RxCloud={configured,init,signIn,signOut,user,healthcheck,syncVault,syncRecipe,syncEmr,config:()=>({url:cfg.url||'',configured:configured()})};
+window.RxCloud={configured,init,signIn,signOut,user,accessToken,healthcheck,syncVault,syncRecipe,syncEmr,saveRecoveryEnvelope,loadRecoveryEnvelope,uploadVaultSecret,downloadVaultSecret,syncDocumentUploads,syncDocumentDownloads,config:()=>({url:cfg.url||'',configured:configured()})};
 })();

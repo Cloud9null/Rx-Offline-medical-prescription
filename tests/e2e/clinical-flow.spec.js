@@ -50,3 +50,10 @@ test('direct prescription remains available without creating an encounter',async
   await expect(page.locator('#screen-rx')).toHaveClass(/active/);
   await expect(page.locator('#encounterCount')).toHaveText('0');
 });
+
+test('privacy-first local assistant structures a note without network AI',async({page})=>{
+  await page.goto('/');await page.locator('#setupPin').fill('synthetic-test-789');await page.locator('#setupPin2').fill('synthetic-test-789');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();await page.locator('#patientName').fill('Paciente Sintético Asistente');await page.locator('#patientDob').fill('1985-04-02');await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
+  await page.locator('#assistantKeyPoints').fill('MC: Cefalea\nPA: Inicio hace seis horas\nEF: Neurológico documentado sin déficit focal\nImpresión: Cefalea en estudio\nPlan: Vigilancia y reevaluación documentada');await page.locator('#structureLocalBtn').click();
+  await expect(page.locator('[data-note-field="reasonForVisit"]')).toHaveValue('Cefalea');await expect(page.locator('[data-note-field="currentIllness"]')).toHaveValue('Inicio hace seis horas');await expect(page.locator('[data-note-field="assessment"]')).toHaveValue('Cefalea en estudio');await expect(page.locator('#assistantStatus')).toContainText('organizados localmente');await expect(page.locator('#copyDraftTextBtn')).toBeVisible();
+});
