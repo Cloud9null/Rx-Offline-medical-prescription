@@ -12,7 +12,7 @@ No se necesita una rama Supabase facturable. El uso queda sujeto a las cuotas de
 
 ## Variables
 
-Nunca incluir `service_role`, contraseña DB ni tokens administrativos en cliente o Git. La opción recomendada para IA externa en Vercel usa `VERCEL_OIDC_TOKEN`, que la plataforma inyecta y rota automáticamente. No debe crearse manualmente. Configuración opcional:
+Nunca incluir `service_role`, contraseña DB ni tokens administrativos en cliente o Git. La opción recomendada para IA externa usa el token OIDC que Vercel inyecta como `x-vercel-oidc-token` en runtime (y `VERCEL_OIDC_TOKEN` durante build) y rota automáticamente. No debe crearse manualmente. Configuración opcional:
 
 ```text
 AI_GATEWAY_CLINICAL_MODEL=openai/gpt-5-mini
