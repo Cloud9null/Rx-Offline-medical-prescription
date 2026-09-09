@@ -82,3 +82,22 @@ test('legacy owner policies are optimized without broadening access',()=>{
   assert.match(sql,/create index if not exists prescriptions_user_patient_idx[\s\S]+\(user_id, patient_id\)/i);
   assert.doesNotMatch(sql,/grant|insert into|update\s+public|delete from|drop|truncate/i);
 });
+
+test('single-owner access migration is additive, self-readable and administratively seeded',()=>{
+  const sql=read('supabase/migrations/20260909153354_authorize_single_owner_access.sql');
+  assert.match(sql,/create table if not exists public\.app_authorized_users/i);
+  assert.match(sql,/enable row level security/i);
+  assert.match(sql,/grant select on public\.app_authorized_users to authenticated/i);
+  assert.match(sql,/\(select auth\.uid\(\)\) = user_id and enabled is true/i);
+  assert.match(sql,/select count\(\*\) from auth\.users[\s\S]+\) = 1/i);
+  assert.doesNotMatch(sql,/drop table|truncate|delete from|on delete cascade/i);
+});
+
+test('application and clinical AI both enforce the server-side owner allowlist',()=>{
+  const app=read('app.js'),cloud=read('cloud.js'),api=read('api/clinical-note.js'),html=read('index.html');
+  assert.match(cloud,/async function authorizeUser\(/);assert.match(cloud,/app_authorized_users/);
+  assert.match(app,/async function resolveInitialAccess\(/);assert.match(app,/ownerIdHash/);
+  assert.match(api,/async function authorize\(/);assert.match(api,/app_authorized_users/);
+  assert.match(html,/ACCESO RESTRINGIDO/);assert.doesNotMatch(html,/registrarse|crear cuenta/i);
+  assert.match(app,/\['localhost','127\.0\.0\.1'\][\s\S]+get\('e2e'\)==='1'/);
+});

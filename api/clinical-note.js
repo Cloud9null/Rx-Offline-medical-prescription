@@ -6,7 +6,16 @@ const SECTION_KEYS=['reasonForVisit','currentIllness','reviewOfSystems','physica
 const schema={type:'object',additionalProperties:false,required:['sections','diagnoses','reviewWarnings'],properties:{sections:{type:'object',additionalProperties:false,required:SECTION_KEYS,properties:Object.fromEntries(SECTION_KEYS.map(k=>[k,{type:'string',maxLength:12000}]))},diagnoses:{type:'array',maxItems:12,items:{type:'object',additionalProperties:false,required:['text','status'],properties:{text:{type:'string',maxLength:500},status:{type:'string',enum:['working','confirmed','ruled_out','history']}}}},reviewWarnings:{type:'array',maxItems:12,items:{type:'string',maxLength:500}}}};
 
 function send(res,status,body){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store, private');res.setHeader('X-Content-Type-Options','nosniff');res.end(JSON.stringify(body))}
-async function authenticate(token){if(!token)return false;const response=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token}`}});return response.ok}
+async function authorize(token){
+  if(!token)return null;
+  const headers={apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token}`};
+  const identity=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers});
+  if(!identity.ok)return null;
+  const user=await identity.json();if(!user?.id)return null;
+  const access=await fetch(`${SUPABASE_URL}/rest/v1/app_authorized_users?select=role,enabled&user_id=eq.${encodeURIComponent(user.id)}&enabled=eq.true&limit=1`,{headers:{...headers,'Cache-Control':'no-store'}});
+  if(!access.ok)return null;
+  const rows=await access.json();return rows?.[0]?.enabled?{user,role:rows[0].role||'authorized'}:null;
+}
 function outputText(payload){if(typeof payload?.output_text==='string')return payload.output_text;for(const item of payload?.output||[])for(const content of item?.content||[])if(content?.type==='output_text'&&content.text)return content.text;return ''}
 function providerConfig(req={headers:{}}){
   if(process.env.OPENAI_API_KEY)return {kind:'openai',url:'https://api.openai.com/v1/responses',token:process.env.OPENAI_API_KEY,model:process.env.OPENAI_CLINICAL_MODEL||'gpt-5-mini'};
@@ -32,7 +41,7 @@ module.exports=async function handler(req,res){
   if(req.method==='GET')return send(res,200,{ok:true,externalAI:Boolean(provider),provider:provider?.kind||'disabled',model:provider?.model||null});
   if(req.method!=='POST')return send(res,405,{error:'Método no permitido.'});
   const token=String(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
-  try{if(!await authenticate(token))return send(res,401,{error:'Sesión Supabase requerida.'})}catch{return send(res,503,{error:'No fue posible validar la sesión.'})}
+  try{if(!await authorize(token))return send(res,403,{error:'Cuenta no autorizada para Rx Offline EMR.'})}catch{return send(res,503,{error:'No fue posible validar la autorización.'})}
   if(!provider)return send(res,503,{error:'La IA externa no está habilitada. Usa “Estructurar local”.'});
   const input=req.body&&typeof req.body==='object'&&!Array.isArray(req.body)?req.body:null;
   if(!input)return send(res,400,{error:'Entrada inválida.'});

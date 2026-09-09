@@ -21,6 +21,13 @@ async function init(){if(!configured())return {configured:false,user:null};sessi
 async function signIn(email,password){if(!configured())throw new Error('Supabase todavía no está configurado.');const data=await request(base()+'/auth/v1/token?grant_type=password',{method:'POST',headers:apiHeaders(null,{'Content-Type':'application/json'}),body:JSON.stringify({email,password})});if(!data?.access_token)throw new Error('Supabase no devolvió una sesión válida.');data.expires_at=Date.now()+Number(data.expires_in||3600)*1000;saveSession(data);return currentUser}
 async function signOut(){const token=await accessToken();if(token&&navigator.onLine){try{await request(base()+'/auth/v1/logout',{method:'POST',headers:apiHeaders(token)})}catch{}}saveSession(null)}
 async function user(){if(!configured())return null;if(!session)session=loadStoredSession();if(!session)return null;if(!navigator.onLine){currentUser=session.user||null;return currentUser}return authUser()}
+async function authorizeUser(){
+  if(!navigator.onLine)throw new Error('La primera autorización de este dispositivo requiere internet.');
+  const u=await authUser(),token=await accessToken();if(!u||!token)throw new Error('Inicia sesión con la cuenta autorizada.');
+  const rows=await request(`${base()}/rest/v1/app_authorized_users?select=role,enabled&user_id=eq.${encodeURIComponent(u.id)}&enabled=eq.true&limit=1`,{headers:apiHeaders(token,{'Cache-Control':'no-store'})});
+  if(!rows?.[0]?.enabled){const err=new Error('Esta cuenta no está autorizada para Rx Offline EMR.');err.status=403;throw err}
+  return {user:u,role:rows[0].role||'authorized'};
+}
 async function rpc(name,params={},requireAuth=true){let token=requireAuth?await accessToken():null;if(requireAuth&&!token)throw new Error('Inicia sesión en Supabase primero.');const doCall=t=>request(base()+'/rest/v1/rpc/'+encodeURIComponent(name),{method:'POST',headers:apiHeaders(t,{'Content-Type':'application/json'}),body:JSON.stringify(params)});try{return await doCall(token)}catch(err){if(requireAuth&&err.status===401&&session?.refresh_token){await refreshSession();token=await accessToken();return doCall(token)}throw err}}
 function encodePath(path){return String(path||'').split('/').map(encodeURIComponent).join('/')}
 async function storagePut(path,value,{upsert=false}={}){const token=await accessToken();if(!token)throw new Error('Inicia sesión en Supabase primero.');return request(`${base()}/storage/v1/object/${PRIVATE_BUCKET}/${encodePath(path)}`,{method:'POST',headers:apiHeaders(token,{'Content-Type':'application/json','x-upsert':upsert?'true':'false'}),body:JSON.stringify(value)})}
@@ -110,5 +117,5 @@ async function syncVault(vault,canonicalFactory){
   return {user:u,bundle,emrResult,documentsUploaded,documentsDownloaded};
 }
 async function syncRecipe(rec,vault,canonicalFactory){return syncVault(vault,canonicalFactory)}
-window.RxCloud={configured,init,signIn,signOut,user,accessToken,healthcheck,syncVault,syncRecipe,syncEmr,saveRecoveryEnvelope,loadRecoveryEnvelope,uploadVaultSecret,downloadVaultSecret,syncDocumentUploads,syncDocumentDownloads,config:()=>({url:cfg.url||'',configured:configured()})};
+window.RxCloud={configured,init,signIn,signOut,user,authorizeUser,accessToken,healthcheck,syncVault,syncRecipe,syncEmr,saveRecoveryEnvelope,loadRecoveryEnvelope,uploadVaultSecret,downloadVaultSecret,syncDocumentUploads,syncDocumentDownloads,config:()=>({url:cfg.url||'',configured:configured()})};
 })();
