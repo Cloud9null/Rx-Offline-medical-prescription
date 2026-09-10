@@ -1,4 +1,4 @@
-# Rx Offline EMR — V3.4
+# Rx Offline EMR — V3.5
 
 PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
 
@@ -10,6 +10,8 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Receta electrónica offline conservada: firma, QR, verificación, impresión media carta, historial y anulación. Puede vincularse a una consulta o emitirse directamente.
 - Expediente longitudinal unificado: las recetas directas aparecen junto con consultas y notas, con folio, fecha, estado y medicamentos. Desde una receta se abre el expediente; una receta directa previa puede vincularse a una nueva nota sin modificar ni volver a firmar la receta.
 - Asistente clínico local que estructura puntos clave sin red y sin inventar datos; opción generativa externa con consentimiento explícito, sesión autenticada y payload minimizado.
+- Espacio independiente **Nota IA rápida**: no requiere paciente ni consulta, no se incorpora al expediente, no se sincroniza y ofrece edición, modo de lectura grande, copiar, compartir, descarga e impresión estándar.
+- Control visual de integridad del borrador con ocho elementos clínicos (interrogatorio, vitales, exploración, diagnóstico, razonamiento, plan, alarmas y seguimiento).
 - Copiar, compartir o descargar la nota como `.txt` estándar. Estas funciones no intentan eludir políticas o restricciones de otro sistema.
 - Documentos PDF/JPEG/PNG cifrados antes de salir del dispositivo; Supabase Storage solo recibe ciphertext en un bucket privado owner-scoped.
 - Recuperación segura entre dispositivos mediante código aleatorio, PBKDF2-SHA-256 y sobre AES-GCM. El servidor nunca recibe la llave maestra ni el código en claro.
@@ -19,7 +21,7 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Navegación adaptativa: rail lateral persistente en escritorio y menú superior desplegable en móvil, sin barra inferior fija.
 - Efecto Liquid Glass progresivo en iPhone PWA, con fallback compatible para Android/Windows/web y respeto a `prefers-reduced-motion`.
 - Diecisiete paletas premium, incluidas dos variantes oscuras.
-- Instalación PWA en iPhone, iPad, Android y escritorio; bloqueo por PIN y Face ID/Touch ID mediante WebAuthn PRF cuando el navegador lo permite.
+- Instalación PWA en iPhone, iPad, Android y escritorio; PIN siempre disponible y biometría WebAuthn autoverificada con PRF o `largeBlob` protegido según capacidad del navegador.
 
 ## Desarrollo y pruebas
 
@@ -35,7 +37,7 @@ Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [back
 
 Las siete migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las tres últimas incorporan recuperación E2EE/documentos privados, una allowlist administrativa y control de sesiones del propietario; no borran ni reescriben recetas, pacientes o notas existentes.
 
-El frontend V3.3 está integrado en `main` y desplegado en producción tras aprobación explícita. V3.4 debe pasar por rama, Preview, pruebas y revisión antes de promoverse.
+El frontend V3.4 está integrado en `main` y desplegado en producción tras aprobación explícita. V3.5 debe pasar por rama, Preview, pruebas y revisión antes de promoverse.
 
 ## IA generativa opcional
 
@@ -58,4 +60,4 @@ La función `/api/clinical-note` valida tanto la sesión Supabase como la allowl
 
 ## Instalar en iPhone
 
-Abre el dominio HTTPS definitivo en Safari, usa **Compartir → Añadir a pantalla de inicio** y activa Face ID después de fijar el dominio. La credencial biométrica está ligada al dominio.
+Abre el dominio HTTPS definitivo en Safari, usa **Compartir → Añadir a pantalla de inicio** y activa Face ID después de fijar el dominio. En **Ajustes → Bloqueo y biometría**, configura y ejecuta **Probar desbloqueo** antes de depender de él. La credencial está ligada al dominio y el PIN permanece como recuperación local.

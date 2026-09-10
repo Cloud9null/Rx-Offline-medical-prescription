@@ -3,12 +3,12 @@
 ## Estado
 
 - Rama de producción: `main`.
-- Producción: V3.3; V3.4 requiere Preview y aprobación antes de promoverse.
+- Producción: V3.4; V3.5 requiere Preview y aprobación antes de promoverse.
 - Supabase: mismo proyecto gratuito; siete migraciones aditivas aplicadas.
 - Acceso: `app_authorized_users` con RLS, un propietario habilitado y sin lectura anónima.
 - Storage: `rx-emr-private-v1`, privado, máximo 6 MB por JSON cifrado.
 - Frontend/API: Vercel Production; cada ajuste se valida primero mediante Preview.
-- Preview V3.4: Ready y protegido por Vercel Authentication; CI del mismo SHA en verde.
+- Preview V3.5: pendiente del PR; debe quedar Ready y con CI del mismo SHA en verde.
 
 No se necesita una rama Supabase facturable. El uso queda sujeto a las cuotas del plan existente.
 
@@ -31,7 +31,7 @@ El endpoint da prioridad a la conexión directa si existe `OPENAI_API_KEY`; de l
 2. URL limpia muestra el acceso restringido; solo la identidad allowlisted puede autorizar un dispositivo nuevo.
 3. Restauración en segundo navegador con código y PIN nuevo.
 4. Upload/download de PDF/JPEG/PNG.
-5. Nota local/IA opcional, final, addendum y texto plano.
+5. Nota local/IA opcional, Nota IA rápida temporal, final, addendum y texto plano.
 6. Receta vinculada y receta directa; QR/verificador/anulación.
 7. PWA, modo avión/reconexión e impresión Rx.
 8. Aprobación explícita para merge/promoción.
@@ -41,5 +41,7 @@ El endpoint da prioridad a la conexión directa si existe `OPENAI_API_KEY`; de l
 La contraseña del gate es la contraseña de **Supabase Auth** que ya se usa para sincronización; no es el PIN de la bóveda. En un navegador que ya tiene bóveda, inicia sesión una sola vez con la cuenta del propietario; el UID queda ligado criptográficamente al metadato local y después puede desbloquearse offline con PIN o biometría. En un dispositivo nuevo se exige primero esa cuenta y luego se crea o recupera la bóveda. No hay registro público.
 
 En **Ajustes → Dispositivos y sesiones** se puede actualizar el inventario, revocar una sesión remota, cerrar todas las demás o desautorizar el equipo actual. La revocación impide el refresh y el siguiente control online de autorización. No puede borrar una bóveda de un equipo desconectado; esa copia permanece cifrada y exige PIN/biometría.
+
+La biometría se configura por dispositivo y dominio. V3.5 comprueba primero el autenticador, prueba PRF y utiliza `largeBlob` protegido cuando el navegador no devuelve PRF. Debe ejecutarse **Probar desbloqueo** en el dispositivo real; Firefox Portable depende de que Windows Hello o una llave compatible estén disponibles para ese perfil.
 
 No registrar prompts, notas, tokens, códigos o cuerpos de Storage. Monitorear solo estado, latencia, versión, agregados y errores sanitizados.
