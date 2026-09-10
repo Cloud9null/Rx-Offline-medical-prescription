@@ -1,4 +1,4 @@
-# Rx Offline EMR — V3.5
+# Rx Offline EMR — V3.5.1
 
 PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
 
@@ -22,6 +22,7 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Efecto Liquid Glass progresivo en iPhone PWA, con fallback compatible para Android/Windows/web y respeto a `prefers-reduced-motion`.
 - Diecisiete paletas premium, incluidas dos variantes oscuras.
 - Instalación PWA en iPhone, iPad, Android y escritorio; PIN siempre disponible y biometría WebAuthn autoverificada con PRF o `largeBlob` protegido según capacidad del navegador.
+- En Safari/iPhone cada ceremonia WebAuthn parte de una acción explícita: se reutiliza el PRF del alta cuando está disponible y, si hace falta otra ceremonia, la interfaz solicita **Completar con Face ID** en un segundo toque.
 
 ## Desarrollo y pruebas
 
@@ -37,7 +38,7 @@ Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [back
 
 Las siete migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las tres últimas incorporan recuperación E2EE/documentos privados, una allowlist administrativa y control de sesiones del propietario; no borran ni reescriben recetas, pacientes o notas existentes.
 
-El frontend V3.4 está integrado en `main` y desplegado en producción tras aprobación explícita. V3.5 debe pasar por rama, Preview, pruebas y revisión antes de promoverse.
+El frontend V3.5 está integrado en `main` y desplegado en producción. V3.5.1 corrige la interoperabilidad biométrica de Safari/iPhone y debe pasar por rama, Preview, pruebas y validación física antes de promoverse.
 
 ## IA generativa opcional
 
