@@ -232,6 +232,8 @@
 
           <div class="premium-card">
             <div class="card-title"><span>◈</span><h3>Temas premium</h3></div>
+            <div class="settings-line"><div><strong>Modo nocturno</strong><small>Alterna rápidamente entre tu tema claro y nocturno sin perder las demás paletas.</small></div><button id="nightModeBtn" class="btn secondary" type="button">Activar modo nocturno</button></div>
+            <div id="themeModeStatus" class="inline-status"></div>
             <div id="themeGrid" class="theme-grid"></div>
           </div>
 
@@ -244,6 +246,14 @@
           <div class="premium-card">
             <div class="card-title"><span>⌘</span><h3>Bloqueo y biometría</h3></div>
             <div class="settings-line"><div><strong>Bloqueo automático</strong><small>Se bloquea al quedar inactiva</small></div><select id="lockTimeout"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="0">Nunca</option></select></div>
+            <div class="settings-line"><div><strong>PIN o contraseña de la bóveda</strong><small>Cambia únicamente la protección local; no altera los expedientes, la firma, la recuperación ni la contraseña de Supabase.</small></div><button id="showChangePinBtn" class="btn secondary" type="button" aria-expanded="false">Cambiar</button></div>
+            <form id="changePinForm" class="security-subform hidden" autocomplete="off">
+              <label>PIN o contraseña actual<input id="currentVaultPin" type="password" autocomplete="current-password" required></label>
+              <div class="form-grid two"><label>Nuevo PIN o contraseña<input id="newVaultPin" type="password" autocomplete="new-password" minlength="8" required></label><label>Confirmar nuevo PIN<input id="confirmVaultPin" type="password" autocomplete="new-password" minlength="8" required></label></div>
+              <p class="micro">Mínimo 8 caracteres. Los respaldos exportados anteriormente conservarán el PIN que tenían cuando fueron creados.</p>
+              <div class="row-actions wrap"><button class="btn primary" type="submit">Actualizar protección</button><button id="cancelChangePinBtn" class="btn ghost" type="button">Cancelar</button></div>
+              <div id="changePinStatus" class="inline-status" role="status"></div>
+            </form>
             <div class="settings-line"><div><strong>Face ID / Touch ID / Windows Hello</strong><small>Credencial WebAuthn del dispositivo; en Safari puede solicitar dos confirmaciones separadas para completar el cifrado.</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
             <div id="biometricCapability" class="device-capability" role="status">Comprobando compatibilidad del navegador…</div>
             <div class="row-actions wrap"><button id="testBiometricBtn" class="btn ghost hidden" type="button">Probar desbloqueo</button><button id="disableBiometricBtn" class="btn danger hidden" type="button">Desactivar biometría</button><button id="lockNowBtn" class="btn ghost" type="button">Bloquear ahora</button></div>

@@ -1,6 +1,6 @@
 {
   "name": "rx-offline-emr",
-  "version": "3.5.1-rc.1",
+  "version": "3.5.2-rc.1",
   "private": true,
   "type": "commonjs",
   "scripts": {
