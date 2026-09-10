@@ -141,6 +141,8 @@ test('biometric unlock self-tests and falls back from PRF to credential-protecte
   const app=read('app.js'),html=read('index.html');
   assert.match(app,/isUserVerifyingPlatformAuthenticatorAvailable/);assert.match(app,/getClientCapabilities/);
   assert.match(app,/largeBlob:\{support:'preferred'\}/);assert.match(app,/largeBlob:\{write:/);assert.match(app,/largeBlob:\{read:true\}/);
+  assert.match(app,/getClientExtensionResults\?\.\(\)/);assert.match(app,/registrationSecret=extension\?\.prf\?\.results\?\.first/);
+  assert.match(app,/transports:internalTransports\(transports\)/);assert.match(app,/pendingBiometric/);assert.match(app,/Completar con Face ID/);
   assert.match(app,/await unlockBiometric\(\);await afterUnlock\(\)/);assert.match(app,/function biometricError\(/);
   assert.match(html,/id="testBiometricBtn"/);assert.match(html,/id="disableBiometricBtn"/);assert.match(html,/id="lockNowBtn"/);
 });

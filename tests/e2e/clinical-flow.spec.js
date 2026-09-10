@@ -94,6 +94,29 @@ test('settings exposes session controls without hiding local security',async({pa
   await expect(page.locator('#biometricCapability')).toBeVisible();await expect(page.locator('#lockNowBtn')).toBeVisible();
 });
 
+test('Safari-style biometric enrollment uses a fresh gesture for the second WebAuthn ceremony',async({page})=>{
+  await page.addInitScript(()=>{
+    window.__rxWebAuthn={gets:0,lastTransports:[]};
+    class MockPublicKeyCredential{
+      static async isUserVerifyingPlatformAuthenticatorAvailable(){return true}
+      static async getClientCapabilities(){return {prf:true,largeBlob:true}}
+    }
+    Object.defineProperty(window,'PublicKeyCredential',{configurable:true,value:MockPublicKeyCredential});
+    Object.defineProperty(navigator,'credentials',{configurable:true,value:{
+      async create(){return {rawId:new Uint8Array([9,8,7,6]).buffer,response:{getTransports:()=>['internal']},getClientExtensionResults:()=>({prf:{enabled:true},largeBlob:{supported:true}})}},
+      async get(options){window.__rxWebAuthn.gets++;window.__rxWebAuthn.lastTransports=options.publicKey.allowCredentials[0].transports||[];return {getClientExtensionResults:()=>({prf:{results:{first:new Uint8Array(32).fill(17).buffer}}})}}
+    }});
+  });
+  await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-faceid-123');await page.locator('#setupPin2').fill('synthetic-faceid-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();await page.locator('#enableBiometricBtn').click();
+  await expect(page.locator('#enableBiometricBtn')).toHaveText('Completar con Face ID');await expect(page.locator('#bioStatus')).toContainText('Passkey creada');
+  await expect.poll(()=>page.evaluate(()=>window.__rxWebAuthn.gets)).toBe(0);
+  await page.locator('#enableBiometricBtn').click();await expect(page.locator('#bioStatus')).toContainText('Biometría configurada y comprobada');await expect(page.locator('#testBiometricBtn')).toBeVisible();
+  await expect.poll(()=>page.evaluate(()=>window.__rxWebAuthn.gets)).toBe(1);expect(await page.evaluate(()=>window.__rxWebAuthn.lastTransports)).toEqual(['internal']);
+  await page.locator('#testBiometricBtn').click();await expect(page.locator('#bioStatus')).toContainText('Prueba correcta');
+  await page.locator('#lockNowBtn').click();await page.locator('#biometricUnlockBtn').click();await expect(page.locator('#mainView')).toBeVisible();
+});
+
 test('standalone quick note structures locally and remains outside the patient record',async({page})=>{
   await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-quick-note-123');await page.locator('#setupPin2').fill('synthetic-quick-note-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('#quickNoteHomeBtn').click();await expect(page.locator('#screen-quicknote')).toHaveClass(/active/);
