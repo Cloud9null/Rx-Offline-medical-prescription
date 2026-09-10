@@ -81,7 +81,7 @@
         <section id="screen-home" class="screen active">
           <div class="hero-panel">
             <div><span class="eyebrow">EXPEDIENTE + PRESCRIPCIÓN LOCAL-FIRST</span><h2>Atención clínica completa, privada y eficiente.</h2><p>Documenta la consulta o emite una receta directa. La bóveda local cifrada sigue siendo la fuente primaria del dispositivo.</p></div>
-            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button></div>
+            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota IA rápida</button></div>
           </div>
           <div class="metric-grid">
             <button class="metric-card" data-nav="patients" type="button"><span>Pacientes</span><strong id="patientCount">0</strong><small>Alta y búsqueda local</small></button>
@@ -111,6 +111,30 @@
 
         <section id="screen-encounter" class="screen">
           <div id="encounterEditor"></div>
+        </section>
+
+        <section id="screen-quicknote" class="screen">
+          <div class="section-head"><div><span class="eyebrow">ESPACIO DE DOCUMENTACIÓN</span><h2>Nota clínica rápida</h2><p class="section-lead">Redacta un borrador independiente sin abrir paciente ni consulta.</p></div><span class="privacy-chip">Sin identificadores</span></div>
+          <div class="quick-note-layout">
+            <form id="quickNoteForm" class="premium-card quick-note-capture">
+              <div class="card-title"><span>✦</span><h3>Puntos clínicos</h3></div>
+              <div class="form-grid three quick-note-context">
+                <label>Formato<select id="quickNoteType"><option value="ambulatory">Nota ambulatoria</option><option value="soap">SOAP</option><option value="evolution">Evolución</option><option value="telemedicine">Teleconsulta</option><option value="referral">Referencia / interconsulta</option></select></label>
+                <label>Grupo de edad<input id="quickNoteAge" maxlength="40" placeholder="Ej. 42 años"></label>
+                <label>Sexo registrado<select id="quickNoteSex"><option value="">No enviar</option><option value="F">Femenino</option><option value="M">Masculino</option><option value="O">Otro / no especificado</option></select></label>
+              </div>
+              <label>Puntos clave desidentificados<textarea id="quickNotePoints" rows="12" maxlength="10000" placeholder="MC: dolor abdominal\nPA: inicio hace 8 horas…\nSV: documentados…\nEF: hallazgos observados…\nImpresión: diagnóstico de trabajo…\nPlan: conducta indicada…"></textarea></label>
+              <div class="quick-note-safety"><strong>No escribas nombre, fecha de nacimiento, teléfono, domicilio, folio ni otro identificador.</strong><span>El estructurador local no envía datos. La IA externa exige cuenta activa y consentimiento en cada generación.</span></div>
+              <div class="assistant-actions"><button id="quickNoteLocalBtn" class="btn secondary" type="button">Estructurar local</button><label class="ai-consent"><input id="quickNoteConsent" type="checkbox"> Autorizo enviar únicamente estos puntos desidentificados al proveedor de IA</label><button id="quickNoteAiBtn" class="btn primary" type="button">Generar con IA</button></div>
+              <div id="quickNoteStatus" class="inline-status" role="status"></div>
+            </form>
+            <section class="premium-card quick-note-result" aria-labelledby="quickNoteResultTitle">
+              <div class="assistant-head"><div><span class="eyebrow">BORRADOR EDITABLE</span><h3 id="quickNoteResultTitle">Texto listo para revisar</h3></div><span id="quickNoteState" class="draft-chip">Vacío</span></div>
+              <textarea id="quickNoteOutput" rows="23" maxlength="30000" aria-label="Borrador de nota clínica" placeholder="Aquí aparecerá la nota estructurada. Revísala y corrige cualquier omisión antes de usarla."></textarea>
+              <div class="row-actions wrap quick-note-actions"><button id="quickNoteReadBtn" class="btn secondary" type="button">Modo lectura grande</button><button id="quickNoteCopyBtn" class="btn ghost" type="button">Copiar</button><button id="quickNoteDownloadBtn" class="btn ghost" type="button">Descargar .txt</button><button id="quickNoteShareBtn" class="btn ghost" type="button">Compartir</button><button id="quickNotePrintBtn" class="btn ghost" type="button">Imprimir / PDF</button><button id="quickNoteClearBtn" class="btn danger" type="button">Limpiar</button></div>
+              <p class="micro">Borrador temporal: no se incorpora al expediente ni se sincroniza. La valoración, exactitud, consentimiento y firma siguen siendo responsabilidad del profesional.</p>
+            </section>
+          </div>
         </section>
 
         <section id="screen-patients" class="screen">
@@ -220,7 +244,9 @@
           <div class="premium-card">
             <div class="card-title"><span>⌘</span><h3>Bloqueo y biometría</h3></div>
             <div class="settings-line"><div><strong>Bloqueo automático</strong><small>Se bloquea al quedar inactiva</small></div><select id="lockTimeout"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="0">Nunca</option></select></div>
-            <div class="settings-line"><div><strong>Face ID / Touch ID</strong><small>WebAuthn PRF cuando el navegador lo soporte</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
+            <div class="settings-line"><div><strong>Face ID / Touch ID / Windows Hello</strong><small>Credencial WebAuthn del dispositivo; PRF o almacenamiento protegido compatible.</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
+            <div id="biometricCapability" class="device-capability" role="status">Comprobando compatibilidad del navegador…</div>
+            <div class="row-actions wrap"><button id="testBiometricBtn" class="btn ghost hidden" type="button">Probar desbloqueo</button><button id="disableBiometricBtn" class="btn danger hidden" type="button">Desactivar biometría</button><button id="lockNowBtn" class="btn ghost" type="button">Bloquear ahora</button></div>
             <div id="bioStatus" class="inline-status"></div>
           </div>
 
@@ -247,6 +273,7 @@
         <button data-nav="home" class="active" type="button"><span>⌂</span><small>Inicio</small></button>
         <button data-nav="patients" type="button"><span>♙</span><small>Pacientes</small></button>
         <button data-nav="emr" type="button"><span>▤</span><small>Expediente</small></button>
+        <button data-nav="quicknote" type="button"><span>✦</span><small>Nota IA</small></button>
         <button data-nav="rx" type="button"><span>℞</span><small>Receta</small></button>
         <button data-nav="history" type="button"><span>◷</span><small>Historial</small></button>
         <button data-nav="settings" type="button"><span>⚙</span><small>Ajustes</small></button>
@@ -278,6 +305,15 @@
     </div>
   </dialog>
 
+  <dialog id="quickNoteReadDialog" class="modal quick-note-read-dialog">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="eyebrow">MODO DE LECTURA / TRANSCRIPCIÓN</span><h3>Nota clínica</h3></div><button id="quickNoteReadCloseBtn" class="icon-btn" type="button" aria-label="Cerrar">×</button></div>
+      <p class="muted">Vista de alto contraste para revisar o transcribir manualmente en un sistema autorizado.</p>
+      <pre id="quickNoteReadText" class="quick-note-read-text"></pre>
+      <div class="row-actions end"><button id="quickNoteReadCloseBottomBtn" class="btn primary" type="button">Cerrar</button></div>
+    </div>
+  </dialog>
+
   <div id="toast" class="toast" role="status"></div>
   <div id="printArea" aria-hidden="true"></div>
   <script src="supabase-config.js"></script>
@@ -285,6 +321,7 @@
   <script src="qr.js"></script>
   <script src="secure-sync.js"></script>
   <script src="clinical-assistant.js"></script>
+  <script src="quick-note.js"></script>
   <script src="emr-core.js"></script>
   <script src="emr.js"></script>
   <script src="app.js"></script>

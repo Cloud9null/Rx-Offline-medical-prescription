@@ -40,7 +40,7 @@ test('direct prescriptions remain searchable and can be linked retrospectively w
 
 test('PWA precaches every new EMR runtime asset',()=>{
   const sw=read('sw.js');
-  for(const asset of ['emr.css','emr-core.js','emr.js','secure-sync.js','clinical-assistant.js'])assert.match(sw,new RegExp(asset.replace('.','\\.')));
+  for(const asset of ['emr.css','emr-core.js','emr.js','secure-sync.js','clinical-assistant.js','quick-note.js'])assert.match(sw,new RegExp(asset.replace('.','\\.')));
   assert.doesNotMatch(sw,/localStorage\.clear|indexedDB\.deleteDatabase/);
 });
 
@@ -135,4 +135,18 @@ test('Liquid Glass is progressive and respects reduced motion',()=>{
   assert.match(css,/min-height:100svh/);assert.match(css,/env\(safe-area-inset-top\)/);assert.match(html,/viewport-fit=cover/);
   assert.match(html,/La misma que usas para sincronización; no es el PIN de la bóveda/);
   assert.match(app,/display-mode: standalone/);assert.match(app,/ios-pwa/);
+});
+
+test('biometric unlock self-tests and falls back from PRF to credential-protected largeBlob',()=>{
+  const app=read('app.js'),html=read('index.html');
+  assert.match(app,/isUserVerifyingPlatformAuthenticatorAvailable/);assert.match(app,/getClientCapabilities/);
+  assert.match(app,/largeBlob:\{support:'preferred'\}/);assert.match(app,/largeBlob:\{write:/);assert.match(app,/largeBlob:\{read:true\}/);
+  assert.match(app,/await unlockBiometric\(\);await afterUnlock\(\)/);assert.match(app,/function biometricError\(/);
+  assert.match(html,/id="testBiometricBtn"/);assert.match(html,/id="disableBiometricBtn"/);assert.match(html,/id="lockNowBtn"/);
+});
+
+test('standalone quick note is temporary, desidentified and uses the authenticated AI endpoint',()=>{
+  const source=read('quick-note.js'),html=read('index.html'),css=read('styles.css');
+  assert.match(html,/id="screen-quicknote"/);assert.match(html,/Sin identificadores/);assert.match(source,/RxClinicalAssistant\.buildAiPayload/);assert.match(source,/Authorization:`Bearer \$\{token\}`/);assert.match(source,/onLock/);
+  assert.doesNotMatch(source,/localStorage|sessionStorage|indexedDB/);assert.match(css,/printing-quick-note/);assert.match(html,/Modo lectura grande/);
 });

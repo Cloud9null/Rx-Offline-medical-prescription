@@ -91,6 +91,16 @@ test('settings exposes session controls without hiding local security',async({pa
   await expect(page.getByRole('heading',{name:'Dispositivos y sesiones'})).toBeVisible();
   await expect(page.locator('#refreshSessionsBtn')).toBeVisible();await expect(page.locator('#signOutOthersBtn')).toBeVisible();await expect(page.locator('#deauthorizeDeviceBtn')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Bloqueo y biometría'})).toBeVisible();
+  await expect(page.locator('#biometricCapability')).toBeVisible();await expect(page.locator('#lockNowBtn')).toBeVisible();
+});
+
+test('standalone quick note structures locally and remains outside the patient record',async({page})=>{
+  await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-quick-note-123');await page.locator('#setupPin2').fill('synthetic-quick-note-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#quickNoteHomeBtn').click();await expect(page.locator('#screen-quicknote')).toHaveClass(/active/);
+  await page.locator('#quickNotePoints').fill('MC: Dolor lumbar\nPA: Inicio después de esfuerzo\nEF: Dolor documentado a la palpación\nImpresión: Lumbalgia mecánica en estudio\nPlan: Revaloración y medidas documentadas');
+  await page.locator('#quickNoteLocalBtn').click();await expect(page.locator('#quickNoteOutput')).toHaveValue(/MOTIVO DE CONSULTA[\s\S]*Dolor lumbar[\s\S]*BORRADOR CLÍNICO/);
+  await expect(page.locator('#patientCount')).toHaveText('0');await expect(page.locator('#encounterCount')).toHaveText('0');
+  await page.locator('#quickNoteReadBtn').click();await expect(page.locator('#quickNoteReadDialog')).toBeVisible();await expect(page.locator('#quickNoteReadText')).toContainText('Dolor lumbar');
 });
 
 test('direct prescription is searchable in the patient record and can seed a later note',async({page})=>{
