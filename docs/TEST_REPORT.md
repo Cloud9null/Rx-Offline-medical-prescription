@@ -6,17 +6,19 @@
 - `npm test`: **35/35 PASS**.
 - `git diff --check`: PASS.
 - Playwright local no inició porque la imagen de trabajo no contiene Chromium y el CDN devolvió 502/timeout al restaurarlo; no se sustituyó por una prueba falsa.
-- GitHub Actions: pendiente para el SHA del PR V3.5; instalará Chromium y ejecutará los ocho flujos.
+- GitHub Actions `EMR preview CI` run 21: **35/35 unitarias y 8/8 E2E Chromium PASS** sobre `11d6928`.
 
 Cobertura: migración del vault, edad, IMC, canonicalización, validación, merge, contratos Rx/QR, receta-consulta, PWA, SQL/RLS/grants, E2EE, minimización IA, texto plano, sesiones, Liquid Glass, vinculación retrospectiva, autoprueba biométrica PRF/`largeBlob`, nota rápida temporal y control de integridad del borrador.
 
 ## E2E del PR
 
-`clinical-flow.spec.js` usa datos sintéticos y cubre bóveda/perfil, paciente/consulta/autosave/asistente local, finalización/receta vinculada/timeline, receta directa, gate del enlace público, navegación escritorio/móvil, sesiones, receta previa vinculada y la Nota IA rápida local sin crear pacientes o consultas. La ejecución CI del PR es obligatoria antes de promoverse.
+`clinical-flow.spec.js` usa datos sintéticos y cubre bóveda/perfil, paciente/consulta/autosave/asistente local, finalización/receta vinculada/timeline, receta directa, gate del enlace público, navegación escritorio/móvil, sesiones, receta previa vinculada y la Nota IA rápida local sin crear pacientes o consultas. Los ocho flujos pasaron en Chromium.
 
 ## Preview Vercel
 
-- Pendiente de generar desde la rama V3.5.
+- Build de Preview: **Ready** para `11d6928`.
+- URL: `https://rx-offline-medical-prescription-git-b9202e-cloud9nulls-projects.vercel.app`.
+- El Preview conserva Vercel Authentication. El conector de inspección no tiene autorización para el scope del equipo; la UI se verificó con el E2E Chromium del mismo SHA y queda pendiente la comprobación física de Face ID.
 
 ## Supabase
 

@@ -22,5 +22,6 @@
 - PWA precachea el nuevo módulo.
 - UI responsive con rail de escritorio, menú superior móvil, safe areas y Liquid Glass progresivo.
 - 35/35 pruebas unitarias y contratos locales PASS.
-- Ocho E2E sintéticos definidos; ejecución Chromium CI obligatoria antes de promoción.
+- GitHub Actions: 35/35 pruebas unitarias y 8/8 E2E sintéticos en Chromium PASS.
+- Vercel Preview Ready para el SHA probado.
 - Sin migraciones ni cambios destructivos de Supabase.
