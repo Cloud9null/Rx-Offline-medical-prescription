@@ -13,7 +13,8 @@
 
 - Añade un control visible para activar o desactivar el modo nocturno.
 - Recuerda el último tema claro y el último tema oscuro.
-- Mantiene disponibles todas las paletas, incluidas **Deep Clinic** y **Aurora Night**.
+- Separa visualmente las paletas claras de las nocturnas.
+- Amplía la selección oscura a **Deep Clinic**, **Aurora Night**, **Obsidian Gold**, **Burgundy Noir**, **Emerald Night** y **Cobalt Noir**.
 
 ## Alcance
 

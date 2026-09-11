@@ -158,6 +158,8 @@ test('night mode is explicit and preserves the last light and dark palettes',()=
   const app=read('app.js'),html=read('index.html');
   assert.match(html,/id="nightModeBtn"/);assert.match(html,/Modo nocturno/);assert.match(app,/async function toggleNightMode\(/);
   assert.match(app,/lastDarkTheme/);assert.match(app,/lastLightTheme/);assert.match(app,/documentElement\.dataset\.themeMode/);
+  for(const name of ['Deep Clinic','Aurora Night','Obsidian Gold','Burgundy Noir','Emerald Night','Cobalt Noir'])assert.match(app,new RegExp(name));
+  assert.ok((app.match(/dark:true/g)||[]).length>=6);assert.match(app,/Temas nocturnos/);
 });
 
 test('standalone quick note is temporary, desidentified and uses the authenticated AI endpoint',()=>{

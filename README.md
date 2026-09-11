@@ -22,7 +22,7 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Efecto Liquid Glass progresivo en iPhone PWA, con fallback compatible para Android/Windows/web y respeto a `prefers-reduced-motion`.
 - Diecisiete paletas premium, incluidas dos variantes oscuras.
 - Instalación PWA en iPhone, iPad, Android y escritorio; PIN siempre disponible, rotación local segura del PIN y biometría WebAuthn autoverificada con PRF o `largeBlob` protegido según capacidad del navegador.
-- Modo nocturno visible con retorno al último tema claro y elección manual entre las paletas `Deep Clinic` y `Aurora Night`.
+- Veintiuna paletas premium separadas en temas claros y nocturnos. El acceso rápido recuerda la última selección; incluye `Deep Clinic`, `Aurora Night`, `Obsidian Gold`, `Burgundy Noir`, `Emerald Night` y `Cobalt Noir`.
 - En Safari/iPhone cada ceremonia WebAuthn parte de una acción explícita: se reutiliza el PRF del alta cuando está disponible y, si hace falta otra ceremonia, la interfaz solicita **Completar con Face ID** en un segundo toque.
 
 ## Desarrollo y pruebas
