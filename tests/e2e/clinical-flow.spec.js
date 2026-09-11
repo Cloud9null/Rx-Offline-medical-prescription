@@ -94,6 +94,18 @@ test('settings exposes session controls without hiding local security',async({pa
   await expect(page.locator('#biometricCapability')).toBeVisible();await expect(page.locator('#lockNowBtn')).toBeVisible();
 });
 
+test('vault PIN rotates without data loss and night mode remains reversible',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-old-pin-123');await page.locator('#setupPin2').fill('synthetic-old-pin-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await page.locator('#nightModeBtn').click();await expect(page.locator('html')).toHaveAttribute('data-theme-mode','dark');await expect(page.locator('#themeModeStatus')).toContainText('Modo nocturno activo');
+  await page.locator('#nightModeBtn').click();await expect(page.locator('html')).toHaveAttribute('data-theme-mode','light');
+  await page.locator('#showChangePinBtn').click();await page.locator('#currentVaultPin').fill('synthetic-old-pin-123');await page.locator('#newVaultPin').fill('synthetic-new-pin-456');await page.locator('#confirmVaultPin').fill('synthetic-new-pin-456');await page.locator('#changePinForm').getByRole('button',{name:'Actualizar protección'}).click();
+  await expect(page.locator('#changePinForm')).toBeHidden();await page.locator('#lockNowBtn').click();
+  await page.locator('#unlockPin').fill('synthetic-old-pin-123');await page.locator('#unlockForm').getByRole('button',{name:'Desbloquear'}).click();await expect(page.locator('#unlockMsg')).toContainText('incorrecta');
+  await page.locator('#unlockPin').fill('synthetic-new-pin-456');await page.locator('#unlockForm').getByRole('button',{name:'Desbloquear'}).click();await expect(page.locator('#mainView')).toBeVisible();
+});
+
 test('Safari-style biometric enrollment uses a fresh gesture for the second WebAuthn ceremony',async({page})=>{
   await page.addInitScript(()=>{
     window.__rxWebAuthn={gets:0,lastTransports:[]};

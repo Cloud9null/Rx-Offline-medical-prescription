@@ -147,6 +147,21 @@ test('biometric unlock self-tests and falls back from PRF to credential-protecte
   assert.match(html,/id="testBiometricBtn"/);assert.match(html,/id="disableBiometricBtn"/);assert.match(html,/id="lockNowBtn"/);
 });
 
+test('vault PIN can be rotated locally without replacing the clinical encryption key',()=>{
+  const app=read('app.js'),html=read('index.html');
+  assert.match(html,/id="changePinForm"/);assert.match(html,/id="currentVaultPin"/);assert.match(html,/id="newVaultPin"/);
+  assert.match(app,/async function changeVaultPin\(/);assert.match(app,/wrapVaultKeyForPin\(state\.vaultKey,next\)/);assert.match(app,/pinChangedAt/);
+  assert.match(app,/\.\.\.state\.meta,\.\.\.pinBox/);assert.doesNotMatch(app,/changeVaultPin[\s\S]{0,1200}setupVault\(/);
+});
+
+test('night mode is explicit and preserves the last light and dark palettes',()=>{
+  const app=read('app.js'),html=read('index.html');
+  assert.match(html,/id="nightModeBtn"/);assert.match(html,/Modo nocturno/);assert.match(app,/async function toggleNightMode\(/);
+  assert.match(app,/lastDarkTheme/);assert.match(app,/lastLightTheme/);assert.match(app,/documentElement\.dataset\.themeMode/);
+  for(const name of ['Deep Clinic','Aurora Night','Obsidian Gold','Burgundy Noir','Emerald Night','Cobalt Noir'])assert.match(app,new RegExp(name));
+  assert.ok((app.match(/dark:true/g)||[]).length>=6);assert.match(app,/Temas nocturnos/);
+});
+
 test('standalone quick note is temporary, desidentified and uses the authenticated AI endpoint',()=>{
   const source=read('quick-note.js'),html=read('index.html'),css=read('styles.css');
   assert.match(html,/id="screen-quicknote"/);assert.match(html,/Sin identificadores/);assert.match(source,/RxClinicalAssistant\.buildAiPayload/);assert.match(source,/Authorization:`Bearer \$\{token\}`/);assert.match(source,/onLock/);
