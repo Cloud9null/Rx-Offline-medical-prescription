@@ -56,7 +56,7 @@
     const button=$('#quickNoteAiBtn');button.disabled=true;status('Generando un borrador clínico desidentificado…');
     try{
       const payload=root.RxClinicalAssistant.buildAiPayload(value,{},context());
-      const response=await fetch('/api/clinical-note',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(payload)});
+      const response=await fetch(window.ClinovyraRuntime?.clinicalApiUrl()||'/api/clinical-note',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(payload)});
       const body=await response.json();if(!response.ok)throw new Error(body?.error||'No se pudo generar el borrador.');
       renderResult(body);$('#quickNoteConsent').checked=false;
       status(`Borrador generado${body.model?` con ${body.model}`:''}. Revisa omisiones y exactitud antes de usarlo.`,true);
@@ -82,3 +82,4 @@
   function init(nextDeps={}){deps={...deps,...nextDeps};bind()}
   return {init,onLock,formatStandalone};
 });
+

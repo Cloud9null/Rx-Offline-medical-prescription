@@ -54,3 +54,18 @@ html[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel)}h
 @media(max-width:980px){.quick-note-layout{grid-template-columns:1fr}.quick-note-result{position:relative;top:auto}.form-grid.three{grid-template-columns:1fr 1fr}.quick-note-context label:first-child{grid-column:1/-1}}
 @media(max-width:600px){.form-grid.three{grid-template-columns:1fr}.quick-note-context label:first-child{grid-column:auto}.quick-note-actions .btn{flex:1 1 calc(50% - 10px)}#quickNoteOutput{min-height:390px}.quick-note-read-dialog .modal-card{padding:16px}.quick-note-read-text{padding:18px}.bottom-nav{padding-bottom:max(8px,env(safe-area-inset-bottom))}}
 @media print{body.printing-quick-note>*:not(#printArea){display:none!important}body.printing-quick-note #printArea{display:block!important}.quick-note-print{width:8.27in;min-height:11.69in;padding:.55in .65in;background:#fff;color:#111}.quick-note-print pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:10pt/1.55 Arial,sans-serif}@page{size:A4 portrait;margin:0}}
+
+/* Clinovyra: identidad y navegación móvil de cinco acciones. */
+.brand-symbol{width:56px;height:56px;object-fit:cover;border-radius:16px;background:#fff;box-shadow:0 8px 22px rgba(8,75,143,.16);flex:none}.brand-symbol.small{width:40px;height:40px;border-radius:12px}.clinovyra-signature{display:flex;justify-content:center;margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(13,51,91,.06)}.clinovyra-signature img{display:block;width:min(100%,560px);height:auto;aspect-ratio:4/3;object-fit:contain}.mobile-dock{display:none}
+@media(max-width:899px){
+  .content{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
+  .mobile-dock{--dock-index:0;position:fixed;z-index:45;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));height:70px;padding:5px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;border:1px solid color-mix(in srgb,var(--line) 80%,transparent);border-radius:25px;background:color-mix(in srgb,var(--panel) 86%,transparent);box-shadow:0 16px 45px rgba(9,34,58,.18),inset 0 1px 0 rgba(255,255,255,.35);isolation:isolate}
+  .dock-indicator{position:absolute;z-index:-1;top:5px;bottom:5px;left:calc(5px + var(--dock-index) * (100% - 10px) / 5);width:calc((100% - 10px) / 5);border-radius:20px;background:color-mix(in srgb,var(--primary) 13%,var(--panel2));box-shadow:inset 0 1px 0 rgba(255,255,255,.32);transition:left .3s cubic-bezier(.2,.8,.2,1)}
+  .mobile-dock button{border:0;min-width:0;min-height:58px;padding:6px 1px;background:transparent;border-radius:18px;color:var(--muted);font:inherit;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;cursor:pointer;touch-action:manipulation}.mobile-dock button span{font-size:1.4rem;line-height:1.1}.mobile-dock button small{font-size:.62rem;font-weight:800;white-space:nowrap}.mobile-dock button.active{color:var(--primary)}.mobile-dock button:focus-visible{outline:2px solid var(--primary);outline-offset:-3px}
+  .finalize-bar{bottom:calc(94px + env(safe-area-inset-bottom))}
+}
+@media(max-width:380px){.mobile-dock{left:6px;right:6px}.mobile-dock button small{font-size:.57rem}}
+@supports ((-webkit-backdrop-filter:blur(18px)) or (backdrop-filter:blur(18px))){.mobile-dock{-webkit-backdrop-filter:saturate(150%) blur(28px);backdrop-filter:saturate(150%) blur(28px)}}
+@media(prefers-reduced-motion:reduce){.dock-indicator{transition:none}}
+@media print{.mobile-dock,.clinovyra-signature{display:none!important}}
+

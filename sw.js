@@ -1,6 +1,6 @@
-const CACHE='rx-offline-emr-v3-20260910-03';
-const CORE=['./','./index.html','./styles.css','./emr.css','./app.js','./emr-core.js','./emr.js','./cloud.js','./secure-sync.js','./clinical-assistant.js','./quick-note.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest'];
-const OPTIONAL=['./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='clinovyra-emr-v3-20261008-02';
+const CORE=['./','./index.html','./styles.css','./emr.css','./app.js','./runtime.js','./emr-core.js','./emr.js','./cloud.js','./secure-sync.js','./clinical-assistant.js','./quick-note.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest'];
+const OPTIONAL=['./icons/clinovyra.png','./assets/clinovyra-brand.jpeg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(async c=>{await c.addAll(CORE);await Promise.allSettled(OPTIONAL.map(x=>c.add(x)))}).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{
@@ -16,3 +16,4 @@ self.addEventListener('fetch',e=>{
     throw new Error('offline');
   })));
 });
+

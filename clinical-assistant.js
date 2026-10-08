@@ -28,10 +28,11 @@
     const documented=Object.fromEntries(SECTION_KEYS.map(k=>[k,clean(sections[k]).slice(0,4000)]));
     return {schemaVersion:1,locale:'es-MX',noteType:String(context.noteType||'ambulatory').slice(0,40),ageLabel:String(context.ageLabel||'').slice(0,40),sex:String(context.sex||'').slice(0,20),keyPoints:clean(points).slice(0,10000),documented};
   }
-  function plainText({patient={},encounter={},note={},profile={},diagnoses=[],observation={},orders=[],includeIdentifiers=true}){
+  function plainText({patient={},encounter={},note={},profile={},facility={},diagnoses=[],observation={},orders=[],includeIdentifiers=true}){
     const s=note.finalSnapshot?.sections||note.sections||{},lines=[];
     lines.push('NOTA MÉDICA AMBULATORIA');
     if(profile.name)lines.push(`Médico: ${profile.name}${profile.license?` | Cédula: ${profile.license}`:''}`);
+    if(facility.name||facility.type||facility.address)lines.push(`Establecimiento: ${[facility.type,facility.name,facility.address].filter(Boolean).join(' | ')}`);
     if(includeIdentifiers&&patient.name)lines.push(`Paciente: ${patient.name}${patient.dob?` | Fecha de nacimiento: ${patient.dob}`:''}${patient.sex?` | Sexo: ${patient.sex}`:''}`);
     if(encounter.folio)lines.push(`Folio: ${encounter.folio}`);if(encounter.occurredAt)lines.push(`Fecha y hora: ${new Date(encounter.occurredAt).toLocaleString('es-MX')}`);lines.push('');
     const blocks=[['MOTIVO DE CONSULTA',s.reasonForVisit],['PADECIMIENTO ACTUAL',s.currentIllness],['REVISIÓN POR SISTEMAS',s.reviewOfSystems],['EXPLORACIÓN FÍSICA',s.physicalExam],['RESULTADOS RELEVANTES',s.relevantResults],['RAZONAMIENTO / IMPRESIÓN CLÍNICA',s.assessment],['PLAN DIAGNÓSTICO',s.diagnosticPlan],['TRATAMIENTO E INDICACIONES',s.plan],['PRONÓSTICO',s.prognosis],['SIGNOS DE ALARMA',s.warningSigns],['SEGUIMIENTO',s.followUp],['REFERENCIA / INTERCONSULTA',s.referral]];
@@ -43,3 +44,4 @@
   }
   return {SECTION_KEYS,structureLocal,mergeSuggestions,buildAiPayload,plainText};
 });
+

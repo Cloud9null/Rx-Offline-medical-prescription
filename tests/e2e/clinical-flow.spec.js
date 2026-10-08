@@ -11,6 +11,8 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.locator('.bottom-nav [data-nav="settings"]').click();
   await page.locator('#profileName').fill('Dra. Prueba Sintética');
   await page.locator('#profileLicense').fill('TEST-000000');
+  await page.locator('#profileFacilityType').fill('Consultorio de medicina general');
+  await page.locator('#profileFacilityName').fill('Consulta Sintética');
   await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
   const canvas=page.locator('#profileSignatureCanvas');await canvas.scrollIntoViewIfNeeded();const box=await canvas.boundingBox();
   await page.mouse.move(box.x+40,box.y+70);await page.mouse.down();await page.mouse.move(box.x+180,box.y+35,{steps:8});await page.mouse.up();
@@ -18,7 +20,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await expect(page.locator('#toast')).toContainText('Firma guardada localmente');
 
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
-  await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');
+  await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');await page.locator('#patientAddress').fill('Domicilio sintético 123');
   await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
   await expect(page.locator('#patientList')).toContainText('Paciente Sintético Uno');
 
@@ -75,6 +77,10 @@ test('desktop uses a persistent side rail and mobile uses a top dropdown',async(
 
   await page.setViewportSize({width:390,height:844});
   await expect(page.locator('#menuBtn')).toBeVisible();
+  await expect(page.locator('#mobileDock')).toBeVisible();
+  await page.locator('#mobileDock [data-nav="patients"]').click();
+  await expect(page.locator('#mobileDock [data-nav="patients"]')).toHaveAttribute('aria-current','page');
+  await page.locator('#dockMoreBtn').click();await expect(page.locator('#primaryNav')).toBeVisible();await page.locator('#navBackdrop').click();
   await expect(page.locator('#primaryNav')).toBeHidden();
   await page.locator('#menuBtn').click();
   await expect(page.locator('#primaryNav')).toBeVisible();
@@ -192,3 +198,4 @@ test('direct prescription is searchable in the patient record and can seed a lat
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
   await expect(page.locator(`[data-link-recipe="${rxId}"]`)).toHaveCount(0);
 });
+
