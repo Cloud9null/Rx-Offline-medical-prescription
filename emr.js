@@ -229,8 +229,9 @@
   function printNote(){const area=$('#printArea');area.classList.remove('manual-print-area');area.innerHTML=`<div class="clinical-note-print">${$('#printableClinicalNote').innerHTML}</div>`;document.body.classList.add('printing-note');setTimeout(()=>window.ClinovyraPrint.print('Clinovyra - nota clínica').catch(e=>app.toast(e.message)),80);setTimeout(()=>document.body.classList.remove('printing-note'),window.Capacitor?.isNativePlatform?.()?60000:700)}
 
   function prescriptionFromNote(e,n){pendingPrescriptionLink={encounterId:e.id,noteId:n.id,patientId:e.patientId};app.openRxForPatient(e.patientId);app.toast(`Receta vinculada a ${e.folio} al emitir`)}
-  function directPrescription(){pendingPrescriptionLink=null;app.navigateRaw('rx')}
-  async function onIssuedPrescription(rec){
+  function directPrescription(){if(window.ClinovyraPolicy?.isCommercial?.())return openStart();pendingPrescriptionLink=null;app.navigateRaw('rx')}
+  function prescriptionContext(patientId){return pendingPrescriptionLink?.patientId===patientId?{...pendingPrescriptionLink}:null}
+  async function onIssuedPrescription(rec,review={}){
     const ts=new Date().toISOString(),context=pendingPrescriptionLink&&rec.patient?.id===pendingPrescriptionLink.patientId?pendingPrescriptionLink:null;
     for(const medication of rec.medications||[]){
       emr().medications.push({id:C.uuid(),patientId:rec.patient?.id,encounterId:context?.encounterId||null,noteId:context?.noteId||null,sourceRxId:rec.id,name:medication.name||'',brand:medication.brand||'',strength:medication.strength||'',dose:medication.dose||'',route:medication.route||'',frequency:medication.frequency||'',duration:medication.duration||'',instructions:medication.instructions||'',status:'active',createdAt:ts,updatedAt:ts});
@@ -238,7 +239,21 @@
     if(context){
       const e=encounter(context.encounterId);if(e){const link={id:C.uuid(),encounterId:e.id,noteId:context.noteId,patientId:e.patientId,rxId:rec.id,createdAt:ts};emr().prescriptionLinks.push(link);audit('prescription.linked','prescription_link',link.id,{rxId:rec.id,encounterId:e.id})}
     }
-    pendingPrescriptionLink=null;audit('medication.recorded','prescription',rec.id,{count:(rec.medications||[]).length,linked:Boolean(context)});await app.save();app.queueSync();renderDashboard();
+    pendingPrescriptionLink=null;audit('medication.recorded','prescription',rec.id,{count:(rec.medications||[]).length,linked:Boolean(context),allergyMatchesReviewed:review.matches?.length||0,duplicateNamesReviewed:review.duplicates?.length||0});await app.save();app.queueSync();renderDashboard();
+  }
+
+  function renderMedicationSummary(container,patientId){
+    const rows=emr().medications.filter(m=>m.patientId===patientId).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    const section=document.createElement('section');section.className='premium-card medication-summary';
+    section.innerHTML=`<div class="section-head"><div><span class="eyebrow">CONCILIACIÓN</span><h3>Medicamentos registrados</h3></div><span class="privacy-chip">${rows.filter(m=>m.status==='active').length} activo(s)</span></div><p class="micro">Registro derivado de recetas emitidas. Confirma con el paciente qué utiliza actualmente; marcar suspensión no altera la receta firmada.</p>${rows.length?rows.map(m=>`<div class="medication-summary-row"><div><strong>${esc(m.name||'Medicamento')} · ${esc(m.strength||'')}</strong><small>${esc(m.dose||'')} · ${esc(m.frequency||'')} · ${m.status==='stopped'?'Suspendido':'Activo'}</small></div>${m.status==='active'?`<button type="button" class="btn small ghost" data-stop-med="${esc(m.id)}">Marcar suspendido</button>`:''}</div>`).join(''):'<p class="muted">Todavía no hay medicamentos derivados de recetas en este expediente.</p>'}`;
+    container.querySelector('.record-summary').after(section);
+    section.querySelectorAll('[data-stop-med]').forEach(button=>button.addEventListener('click',async()=>{
+      const med=emr().medications.find(m=>m.id===button.dataset.stopMed&&m.patientId===patientId&&m.status==='active');if(!med)return;
+      const reason=prompt('Motivo de suspensión (obligatorio):','');if(reason===null)return;
+      if(!reason.trim())return app.toast('Escribe el motivo de suspensión.');
+      const ts=new Date().toISOString();med.status='stopped';med.stoppedAt=ts;med.stopReason=C.cleanText(reason,500);med.updatedAt=ts;
+      audit('medication.stopped','medication',med.id,{patientId,sourceRxId:med.sourceRxId,reason:med.stopReason});await app.save();app.queueSync();openPatientRecord(patientId);app.toast('Medicamento marcado como suspendido');
+    }));
   }
 
   function openPatientRecord(patientId){
@@ -253,7 +268,8 @@
       ?`<article class="record-event"><span>${esc(ev.type)}</span><div><strong>${esc(ev.title)}</strong><small>${esc(ev.detail)}</small></div><div class="record-event-actions"><small>${esc(fmt(ev.at))}</small><button class="btn small secondary" data-open-encounter="${esc(ev.encounterId)}" type="button">${ev.status==='final'?'Ver nota':'Continuar'}</button></div></article>`
       :`<article class="record-event"><span>${esc(ev.type)}</span><div><strong>${esc(ev.title)}</strong><small>${esc(ev.detail)}</small></div><div class="record-event-actions"><small>${esc(fmt(ev.at))}</small><button class="btn small secondary" data-open-recipe="${esc(ev.rxId)}" type="button">Ver receta</button>${ev.encounterId?`<button class="btn small ghost" data-open-encounter="${esc(ev.encounterId)}" type="button">Ver nota</button>`:`<button class="btn small ghost" data-link-recipe="${esc(ev.rxId)}" type="button">Nueva nota + vincular</button>`}</div></article>`).join('');
     const el=$('#patientRecord');el.classList.remove('hidden');el.innerHTML=`<div class="record-head premium-card"><div><span class="eyebrow">EXPEDIENTE LONGITUDINAL</span><h2>${esc(p.name)}</h2><p>${esc(C.ageAt(p.dob)?.label||'Edad no disponible')} · ${esc(p.sex||'—')} · ${esc(p.phone||'Sin teléfono')}</p></div><div class="row-actions wrap"><button id="recordNewEncounter" class="btn primary" type="button">＋ Consulta</button><button id="recordDirectRx" class="btn secondary" type="button">℞ Receta directa</button><button id="recordProfile" class="btn ghost" type="button">Antecedentes</button><button id="closeRecord" class="icon-btn" type="button">×</button></div></div><div class="record-counts"><div><strong>${encs.length}</strong><span>Consultas</span></div><div><strong>${finalNotes}</strong><span>Notas finalizadas</span></div><div><strong>${recipes.length}</strong><span>Recetas expedidas</span></div><div><strong>${directRecipes}</strong><span>Recetas sin nota</span></div></div><div class="record-summary"><div class="clinical-alert ${profile.allergyKnowledge==='known'?'danger':''}"><strong>Alergias</strong><span>${esc(profile.allergies||p.allergies||'Información no confirmada')}</span></div><div class="premium-card"><strong>Antecedentes relevantes</strong><p>${esc(profile.pathologicalHistory||'Sin captura')}</p></div><div class="premium-card"><strong>Medicamentos actuales</strong><p>${esc(profile.currentMedications||'Sin captura')}</p></div></div><div class="premium-card"><div class="record-timeline-head"><div><h3>Línea de tiempo clínica</h3><p>Consultas, notas y todas las recetas del paciente, incluso las emitidas sin nota.</p></div></div>${eventHtml||'<div class="empty-state">Sin eventos clínicos.</div>'}</div>`;
-    $('#recordNewEncounter').addEventListener('click',()=>openStart(p.id));$('#recordDirectRx').addEventListener('click',()=>{pendingPrescriptionLink=null;app.openRxForPatient(p.id)});$('#recordProfile').addEventListener('click',()=>openClinicalProfile(p.id));$('#closeRecord').addEventListener('click',()=>el.classList.add('hidden'));
+    renderMedicationSummary(el,p.id);
+    $('#recordNewEncounter').addEventListener('click',()=>openStart(p.id));$('#recordDirectRx').addEventListener('click',()=>{if(window.ClinovyraPolicy?.isCommercial?.())return openStart(p.id);pendingPrescriptionLink=null;app.openRxForPatient(p.id)});$('#recordProfile').addEventListener('click',()=>openClinicalProfile(p.id));$('#closeRecord').addEventListener('click',()=>el.classList.add('hidden'));
     el.querySelectorAll('[data-open-encounter]').forEach(b=>b.addEventListener('click',()=>openEncounter(b.dataset.openEncounter)));el.querySelectorAll('[data-open-recipe]').forEach(b=>b.addEventListener('click',()=>app.openRecipe(b.dataset.openRecipe)));el.querySelectorAll('[data-link-recipe]').forEach(b=>b.addEventListener('click',()=>openStart(p.id,b.dataset.linkRecipe)));
   }
 
@@ -277,6 +293,6 @@
 
   function audit(action,entityType,entityId,metadata){if(!vault)return;emr().auditEvents.push({id:C.uuid(),action,entityType,entityId,actorKeyFingerprint:vault.signing?.keyFingerprint||'',createdAt:new Date().toISOString(),metadata:metadata||{}});if(emr().auditEvents.length>5000)emr().auditEvents=emr().auditEvents.slice(-5000)}
 
-  window.RxEMR={init,onLock,renderDashboard,renderActivity,openStart,openPatientRecord,openEncounter,onIssuedPrescription,directPrescription};
+  window.RxEMR={init,onLock,renderDashboard,renderActivity,openStart,openPatientRecord,openEncounter,onIssuedPrescription,directPrescription,prescriptionContext};
 })();
 

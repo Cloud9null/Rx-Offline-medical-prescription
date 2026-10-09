@@ -40,7 +40,7 @@ npm ci
 npm run desktop:win
 ```
 
-Si el proyecto nativo ya existe, usa `npm run android:sync` o `npm run ios:sync` tras editar la web. La acción `Clinovyra native test builds` corre en el PR y manualmente; genera APK de depuración, EXE sin firma y comprueba la compilación de iOS para simulador. No genera IPA instalable ni publica tiendas o producción. No ejecutes artefactos de CI con datos reales hasta completar las pruebas de seguridad del dispositivo.
+Si el proyecto nativo ya existe, usa `npm run android:sync` o `npm run ios:sync` tras editar la web. Primero se despliega la vista previa Vercel y corre `EMR preview CI`. Después de probar la web, la etiqueta `native-ready` en el PR dispara `Clinovyra native test builds`; también admite ejecución manual cuando el workflow está en la rama predeterminada. Genera APK de depuración, EXE sin firma y comprueba la compilación de iOS para simulador. No genera IPA instalable ni publica tiendas o producción. No ejecutes artefactos de CI con datos reales hasta completar las pruebas de seguridad del dispositivo.
 
 ## Verificación obligatoria por dispositivo
 

@@ -3,22 +3,14 @@ name: Clinovyra native test builds
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - 'native/**'
-      - 'native-print.js'
-      - 'native-biometric.js'
-      - 'app.js'
-      - 'emr.js'
-      - 'quick-note.js'
-      - 'styles.css'
-      - 'index.html'
-      - '.github/workflows/clinovyra-native.yml'
+    types: [labeled]
 
 permissions:
   contents: read
 
 jobs:
   android:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     defaults:
@@ -45,6 +37,7 @@ jobs:
           if-no-files-found: error
 
   windows:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
     runs-on: windows-latest
     timeout-minutes: 35
     defaults:
@@ -64,6 +57,7 @@ jobs:
           if-no-files-found: error
 
   ios-simulator:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
     runs-on: macos-latest
     timeout-minutes: 40
     defaults:

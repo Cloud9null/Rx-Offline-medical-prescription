@@ -1,5 +1,5 @@
-const CACHE='clinovyra-emr-v3-20261008-03';
-const CORE=['./','./index.html','./styles.css','./emr.css','./app.js','./runtime.js','./emr-core.js','./emr.js','./cloud.js','./secure-sync.js','./clinical-assistant.js','./quick-note.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest'];
+const CACHE='clinovyra-emr-v3-20261009-04';
+const CORE=['./','./index.html','./styles.css','./emr.css','./app.js','./runtime.js','./product-policy.js','./native-print.js','./native-biometric.js','./emr-core.js','./emr.js','./cloud.js','./secure-sync.js','./clinical-assistant.js','./quick-note.js','./supabase-config.js','./qr.js','./verify.html','./verify.js','./manifest.webmanifest'];
 const OPTIONAL=['./icons/clinovyra.png','./assets/clinovyra-brand.jpeg'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(async c=>{await c.addAll(CORE);await Promise.allSettled(OPTIONAL.map(x=>c.add(x)))}).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

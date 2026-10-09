@@ -1,7 +1,7 @@
 const {test,expect}=require('@playwright/test');
 
 test('synthetic patient → final note → linked prescription → timeline',async({page})=>{
-  page.on('dialog',d=>d.accept());
+  page.on('dialog',d=>d.accept(d.type()==='prompt'?'Tratamiento completado':undefined));
   await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-test-123');
   await page.locator('#setupPin2').fill('synthetic-test-123');
@@ -43,6 +43,9 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 
   await page.locator('.bottom-nav [data-nav="emr"]').click();await page.locator('[data-open-record]').click();
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
+  await expect(page.locator('.medication-summary')).toContainText('Paracetamol');
+  await page.locator('[data-stop-med]').click();
+  await expect(page.locator('.medication-summary')).toContainText('Suspendido');
 });
 
 test('direct prescription remains available without creating an encounter',async({page})=>{
