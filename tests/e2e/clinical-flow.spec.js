@@ -101,7 +101,7 @@ test('desktop uses a persistent side rail and mobile uses a top dropdown',async(
   await expect(page.locator('#mobileDock')).toBeVisible();
   await page.locator('#mobileDock [data-nav="patients"]').click();
   await expect(page.locator('#mobileDock [data-nav="patients"]')).toHaveAttribute('aria-current','page');
-  await page.locator('#dockMoreBtn').click();await expect(page.locator('#primaryNav')).toBeVisible();await page.locator('#navBackdrop').click({position:{x:10,y:200}});
+  await page.locator('#dockMoreBtn').click();await expect(page.locator('#primaryNav')).toBeVisible();await page.keyboard.press('Escape');
   await expect(page.locator('#primaryNav')).toBeHidden();
   await page.locator('#menuBtn').click();
   await expect(page.locator('#primaryNav')).toBeVisible();
