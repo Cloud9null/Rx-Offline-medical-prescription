@@ -27,6 +27,7 @@ async function localResponse(request){
 async function start(){
   protocol.handle('app',localResponse);
   const win=new BrowserWindow({width:1320,height:880,minWidth:390,minHeight:640,backgroundColor:'#f1f7fb',autoHideMenuBar:true,webPreferences:{nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,devTools:!app.isPackaged}});
+  win.setContentProtection(true);
   win.webContents.setWindowOpenHandler(({url})=>{if(externalAllowed(url))shell.openExternal(url);return {action:'deny'}});
   win.webContents.on('will-navigate',(event,url)=>{if(!url.startsWith(ORIGIN+'/')){event.preventDefault();if(externalAllowed(url))shell.openExternal(url)}});
   win.webContents.session.setPermissionRequestHandler((_webContents,_permission,callback)=>callback(false));

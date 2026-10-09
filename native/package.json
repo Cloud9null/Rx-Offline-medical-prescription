@@ -6,12 +6,13 @@
   "scripts": {
     "prepare:web": "node build-web.mjs",
     "android:init": "npm run prepare:web && cap add android && npm run assets:android && npm run android:harden",
-    "ios:init": "npm run prepare:web && cap add ios && npm run assets:ios",
+    "ios:init": "npm run prepare:web && cap add ios && npm run assets:ios && npm run ios:harden",
     "assets:android": "capacitor-assets generate --android --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'",
     "assets:ios": "capacitor-assets generate --ios --iconBackgroundColor '#ffffff' --splashBackgroundColor '#ffffff'",
     "android:sync": "npm run prepare:web && cap sync android && npm run android:harden",
     "android:harden": "node harden-android.mjs",
-    "ios:sync": "npm run prepare:web && cap sync ios",
+    "ios:sync": "npm run prepare:web && cap sync ios && npm run ios:harden",
+    "ios:harden": "node harden-ios.mjs",
     "android:open": "cap open android",
     "ios:open": "cap open ios",
     "desktop:dev": "npm run prepare:web && electron .",
@@ -21,6 +22,7 @@
     "@capacitor/android": "8.0.0",
     "@capacitor/core": "8.0.0",
     "@capacitor/ios": "8.0.0",
+    "@capgo/capacitor-native-biometric": "8.8.1",
     "@capgo/capacitor-printer": "8.1.2"
   },
   "devDependencies": {

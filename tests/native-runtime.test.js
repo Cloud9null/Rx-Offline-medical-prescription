@@ -39,8 +39,31 @@ test('Android rebuilds disable operating-system backup of the local clinical vau
   const script=fs.readFileSync(path.join(__dirname,'../native/harden-android.mjs'),'utf8');
   const pkg=JSON.parse(fs.readFileSync(path.join(__dirname,'../native/package.json'),'utf8'));
   assert.match(script,/android:allowBackup="false"/);
+  assert.match(script,/FLAG_SECURE/);
   assert.match(pkg.scripts['android:init'],/android:harden/);
   assert.match(pkg.scripts['android:sync'],/android:harden/);
+});
+
+test('mobile biometric unlock retrieves a hardware-protected key, never a plain credential',async()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../native-biometric.js'),'utf8');
+  const calls=[];
+  const native={Capacitor:{isNativePlatform:()=>true,registerPlugin(id){assert.equal(id,'NativeBiometric');return {
+    isAvailable:async()=>({isAvailable:true,strongBiometryIsAvailable:true}),
+    setCredentials:async x=>calls.push(['store',x]),
+    getSecureCredentials:async x=>{calls.push(['read',x]);return {username:'owner:vault',password:'synthetic-key'}},
+    deleteCredentials:async x=>calls.push(['delete',x])
+  }}}};
+  vm.runInNewContext(source,{window:native});
+  assert.equal(await native.ClinovyraBiometric.available(),true);
+  await native.ClinovyraBiometric.protect('vault-1','owner:vault','synthetic-key');
+  assert.equal(calls[0][1].accessControl,1);
+  assert.equal(calls[0][1].authValidityDuration,0);
+  assert.equal((await native.ClinovyraBiometric.release('vault-1')).password,'synthetic-key');
+  assert.equal(calls[1][0],'read');
+  await native.ClinovyraBiometric.remove('vault-1');
+  const web={};vm.runInNewContext(source,{window:web});
+  assert.equal(web.ClinovyraBiometric.supported(),false);
+  await assert.rejects(()=>web.ClinovyraBiometric.release('vault-1'));
 });
 
 test('native printing uses the system printer and the web keeps its print dialog',async()=>{

@@ -257,7 +257,7 @@
               <div class="row-actions wrap"><button class="btn primary" type="submit">Actualizar protección</button><button id="cancelChangePinBtn" class="btn ghost" type="button">Cancelar</button></div>
               <div id="changePinStatus" class="inline-status" role="status"></div>
             </form>
-            <div class="settings-line"><div><strong>Face ID / Touch ID / Windows Hello</strong><small>Credencial WebAuthn del dispositivo; en Safari puede solicitar dos confirmaciones separadas para completar el cifrado.</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
+            <div class="settings-line"><div><strong>Biometría del dispositivo</strong><small>Face ID, Touch ID o huella en la app móvil; passkey en la web. El PIN local siempre queda disponible.</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
             <div id="biometricCapability" class="device-capability" role="status">Comprobando compatibilidad del navegador…</div>
             <div class="row-actions wrap"><button id="testBiometricBtn" class="btn ghost hidden" type="button">Probar desbloqueo</button><button id="disableBiometricBtn" class="btn danger hidden" type="button">Desactivar biometría</button><button id="lockNowBtn" class="btn ghost" type="button">Bloquear ahora</button></div>
             <div id="bioStatus" class="inline-status"></div>
@@ -341,6 +341,7 @@
   <script src="supabase-config.js"></script>
   <script src="runtime.js"></script>
   <script src="native-print.js"></script>
+  <script src="native-biometric.js"></script>
   <script src="cloud.js"></script>
   <script src="qr.js"></script>
   <script src="secure-sync.js"></script>

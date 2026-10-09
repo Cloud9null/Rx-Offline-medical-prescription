@@ -6,6 +6,7 @@ on:
     paths:
       - 'native/**'
       - 'native-print.js'
+      - 'native-biometric.js'
       - 'app.js'
       - 'emr.js'
       - 'quick-note.js'
