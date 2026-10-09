@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 const base=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const out=join(base,'native','www');
 const nativeAssets=join(base,'native','assets');
-const files=['index.html','verify.html','styles.css','emr.css','app.js','runtime.js','emr-core.js','emr.js','cloud.js','secure-sync.js','clinical-assistant.js','quick-note.js','supabase-config.js','qr.js','verify.js','manifest.webmanifest'];
+const files=['index.html','verify.html','styles.css','emr.css','app.js','runtime.js','native-print.js','emr-core.js','emr.js','cloud.js','secure-sync.js','clinical-assistant.js','quick-note.js','supabase-config.js','qr.js','verify.js','manifest.webmanifest'];
 await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
 for(const name of files)await copyFile(join(base,name),join(out,name));
 await cp(join(base,'icons'),join(out,'icons'),{recursive:true});

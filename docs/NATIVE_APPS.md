@@ -7,11 +7,11 @@ La aplicación mantiene el mismo modelo clínico, la bóveda local y el proyecto
 | Plataforma | Proyecto | Salida de prueba | Condición para distribución habitual |
 |---|---|---|---|
 | Android | Capacitor 8, `native/android` generado | APK de depuración | Keystore privada, build release y pruebas físicas |
-| iPhone/iPad | Capacitor 8, `native/ios` generado | Proyecto Xcode | Mac, Xcode, Apple Developer, firma y perfil de aprovisionamiento para IPA/TestFlight |
+| iPhone/iPad | Capacitor 8, `native/ios` generado | Proyecto Xcode y compilación de simulador en CI | Mac, Xcode, Apple Developer, firma y perfil de aprovisionamiento para IPA/TestFlight |
 | Windows | Electron, protocolo local seguro `app://clinovyra.local` | EXE NSIS/portable sin firma | Certificado Authenticode, revisión SmartScreen y pruebas Windows |
 | Web/PWA | Vercel | URL existente | Sigue siendo opción de acceso; este cambio no publica producción automáticamente |
 
-`native/www` se genera desde la raíz y se excluye de git. No contiene secretos ni una copia de la base. La API opcional de IA se invoca sobre HTTPS contra la función Vercel existente con Supabase Auth. Los QR emitidos desde una app nativa apuntan al verificador público HTTPS, no a `localhost`.
+`native/www` se genera desde la raíz y se excluye de git. No contiene secretos ni una copia de la base. La interfaz de las apps instaladas está empaquetada localmente; no carga Vercel para mostrar cada pantalla. Supabase autentica y sincroniza los datos; Cloudflare no almacena los expedientes en esta arquitectura. La API opcional de IA se invoca sobre HTTPS contra la función Vercel existente con Supabase Auth. Los QR emitidos desde una app nativa apuntan al verificador público HTTPS, no a `localhost`.
 
 El proyecto Android generado desactiva `android:allowBackup` para evitar que el respaldo general del teléfono copie el almacenamiento clínico local. Al reconstruir o sincronizar Android se aplica de nuevo esta configuración. La recuperación deliberada del EMR usa el sobre cifrado y el código de recuperación. No confundas el APK de depuración o el EXE sin firma con una versión clínica lista para distribuir.
 
@@ -40,7 +40,7 @@ npm ci
 npm run desktop:win
 ```
 
-Si el proyecto nativo ya existe, usa `npm run android:sync` o `npm run ios:sync` tras editar la web. La acción `Clinovyra native test builds` se ejecuta **solo manualmente** y genera APK de depuración y EXE sin firma; no publica tiendas ni producción. No ejecutes artefactos de CI con datos reales hasta completar las pruebas de seguridad del dispositivo.
+Si el proyecto nativo ya existe, usa `npm run android:sync` o `npm run ios:sync` tras editar la web. La acción `Clinovyra native test builds` corre en el PR y manualmente; genera APK de depuración, EXE sin firma y comprueba la compilación de iOS para simulador. No genera IPA instalable ni publica tiendas o producción. No ejecutes artefactos de CI con datos reales hasta completar las pruebas de seguridad del dispositivo.
 
 ## Verificación obligatoria por dispositivo
 
@@ -48,7 +48,7 @@ Si el proyecto nativo ya existe, usa `npm run android:sync` o `npm run ios:sync`
 2. Emite una receta sintética offline y escanea su QR desde otro dispositivo con internet. Verifica firma y estado en el sitio público.
 3. Bloquea, desbloquea con PIN y prueba biometría **en la plataforma concreta**. WebAuthn/passkeys están asociados al origen web; `capacitor://`, `https://localhost` y `app://` son otros orígenes. La biometría web no se promete en la app nativa y el PIN continúa siendo el medio de acceso local. Para biometría nativa real haría falta un módulo de almacenamiento protegido y una migración de llaves auditada.
    La PWA y cada app instalada tienen credenciales y almacenamiento distintos. No borres la PWA para instalar la app; recupera la bóveda en la app y verifica que los datos coincidan antes de migrar tu flujo diario.
-4. Comprueba IA externa bajo sesión autorizada, impresión/descarga de notas y recetas, permisos, revocación de sesiones y cierre de la app. La IA local sigue disponible offline.
+4. Comprueba IA externa bajo sesión autorizada, impresión/descarga de notas y recetas, permisos, revocación de sesiones y cierre de la app. La IA local sigue disponible offline. Android e iOS integran `@capgo/capacitor-printer` 8.1.2 para abrir la impresión del sistema desde la WebView. Prueba físicamente el tamaño carta, dos medias cartas, cortes, colores y la cantidad de páginas. El historial registra la **solicitud** de impresión, no confirma que la impresora haya producido papel. Los lotes recientes permiten repetir los mismos folios; el historial completo permanece en la bóveda.
 5. Para iOS revisa la política de privacidad, permisos y comportamiento WebKit en hardware. Un IPA instalable requiere firma de Apple; un entorno Linux no lo produce.
 
 Los metadatos clínicos de Supabase usan Auth/RLS, **no cifrado de extremo a extremo por campo**. La bóveda y documentos sincronizados sí están cifrados en cliente según los módulos actuales. Mantén copia del código de recuperación y respaldo verificado.

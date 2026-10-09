@@ -18,22 +18,35 @@
     "desktop:win": "npm run prepare:web && electron-builder --win nsis portable --x64"
   },
   "dependencies": {
-    "@capacitor/core": "8.0.0",
     "@capacitor/android": "8.0.0",
-    "@capacitor/ios": "8.0.0"
+    "@capacitor/core": "8.0.0",
+    "@capacitor/ios": "8.0.0",
+    "@capgo/capacitor-printer": "8.1.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.0.0",
     "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.0.0",
     "electron": "44.5.1",
     "electron-builder": "26.0.12"
   },
   "build": {
     "appId": "com.clinovyra.emr",
     "productName": "Clinovyra EMR",
-    "directories": {"output":"dist"},
-    "files": ["electron-main.cjs","www/**/*","package.json"],
-    "win": {"icon":"www/icons/clinovyra.png","target":["nsis","portable"]},
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron-main.cjs",
+      "www/**/*",
+      "package.json"
+    ],
+    "win": {
+      "icon": "www/icons/clinovyra.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
     "asar": true
   }
 }

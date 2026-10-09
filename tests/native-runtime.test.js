@@ -5,6 +5,7 @@ const handler=require('../api/clinical-note.js');
 const model=require('../emr-core.js');
 const fs=require('node:fs');
 const path=require('node:path');
+const vm=require('node:vm');
 
 function capture(){return {headers:{},setHeader(k,v){this.headers[k]=v},end(value){this.body=value}}}
 
@@ -40,4 +41,12 @@ test('Android rebuilds disable operating-system backup of the local clinical vau
   assert.match(script,/android:allowBackup="false"/);
   assert.match(pkg.scripts['android:init'],/android:harden/);
   assert.match(pkg.scripts['android:sync'],/android:harden/);
+});
+
+test('native printing uses the system printer and the web keeps its print dialog',async()=>{
+  const source=fs.readFileSync(path.join(__dirname,'../native-print.js'),'utf8');
+  let name='',webCalls=0;
+  const native={Capacitor:{isNativePlatform:()=>true,registerPlugin(id){assert.equal(id,'Printer');return {printWebView:async options=>{name=options.name}}}},print(){throw new Error('unexpected browser print')}};
+  vm.runInNewContext(source,{window:native});await native.ClinovyraPrint.print('Receta manual');assert.equal(name,'Receta manual');
+  const web={print(){webCalls++}};vm.runInNewContext(source,{window:web});await web.ClinovyraPrint.print('Receta manual');assert.equal(webCalls,1);
 });

@@ -53,6 +53,27 @@ test('direct prescription remains available without creating an encounter',async
   await expect(page.locator('#encounterCount')).toHaveText('0');
 });
 
+test('manual prescription batches print two per letter sheet and can reuse original folios',async({page})=>{
+  await page.addInitScript(()=>{window.__printCalls=0;window.print=()=>{window.__printCalls++}});
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-manual-123');await page.locator('#setupPin2').fill('synthetic-manual-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#manualTemplateBtn').click();await expect(page.locator('#manualTemplateDialog')).toBeVisible();
+  await page.locator('#manualPrintCount').fill('3');await page.locator('#manualPrintCount').dispatchEvent('change');
+  await expect(page.locator('#manualTemplatePreview .manual-letter-page')).toHaveCount(2);
+  await page.locator('#printManualTemplateBtn').click();await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(1);
+  const originals=await page.locator('#printArea .manual-folio-chip strong').allTextContents();
+  expect(originals).toHaveLength(3);expect(new Set(originals).size).toBe(3);
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  await page.locator('#regenerateManualFoliosBtn').click();
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).not.toEqual(originals);
+  await page.locator('#manualBatchHistory [data-reprint-batch]').first().click();
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).toEqual(originals);
+  await page.locator('#printManualTemplateBtn').click();await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(2);
+  expect(await page.locator('#printArea .manual-folio-chip strong').allTextContents()).toEqual(originals);
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(2);
+  await expect(page.locator('#manualBatchHistory')).toContainText('Reimpresión solicitada');
+});
+
 test('privacy-first local assistant structures a note without network AI',async({page})=>{
   await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-test-789');await page.locator('#setupPin2').fill('synthetic-test-789');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();await page.locator('#patientName').fill('Paciente Sintético Asistente');await page.locator('#patientDob').fill('1985-04-02');await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
@@ -80,7 +101,7 @@ test('desktop uses a persistent side rail and mobile uses a top dropdown',async(
   await expect(page.locator('#mobileDock')).toBeVisible();
   await page.locator('#mobileDock [data-nav="patients"]').click();
   await expect(page.locator('#mobileDock [data-nav="patients"]')).toHaveAttribute('aria-current','page');
-  await page.locator('#dockMoreBtn').click();await expect(page.locator('#primaryNav')).toBeVisible();await page.locator('#navBackdrop').click();
+  await page.locator('#dockMoreBtn').click();await expect(page.locator('#primaryNav')).toBeVisible();await page.locator('#navBackdrop').click({position:{x:10,y:200}});
   await expect(page.locator('#primaryNav')).toBeHidden();
   await page.locator('#menuBtn').click();
   await expect(page.locator('#primaryNav')).toBeVisible();

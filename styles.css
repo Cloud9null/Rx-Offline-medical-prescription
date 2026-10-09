@@ -68,4 +68,9 @@ html[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel)}h
 @supports ((-webkit-backdrop-filter:blur(18px)) or (backdrop-filter:blur(18px))){.mobile-dock{-webkit-backdrop-filter:saturate(150%) blur(28px);backdrop-filter:saturate(150%) blur(28px)}}
 @media(prefers-reduced-motion:reduce){.dock-indicator{transition:none}}
 @media print{.mobile-dock,.clinovyra-signature{display:none!important}}
+.manual-batch-history{margin:0 0 18px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.manual-batch-history .section-head{margin:0 0 8px}.manual-batch-history .section-head small{display:block;color:var(--muted);font-size:.73rem;margin-top:4px}
+.manual-batch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.manual-batch-row>div{min-width:0}.manual-batch-row strong,.manual-batch-row small{display:block;overflow-wrap:anywhere}.manual-batch-row small{color:var(--muted);font-size:.72rem;margin-top:3px}
+@media(max-width:540px){.manual-batch-row{align-items:flex-start;flex-direction:column}.manual-batch-row button{align-self:flex-start}}
 

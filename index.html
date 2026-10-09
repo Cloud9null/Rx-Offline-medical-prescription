@@ -322,6 +322,7 @@
       <div class="manual-batch-panel"><div><strong>Lote de impresión</strong><small>Define aquí cuántas recetas físicas necesitas.</small></div><div class="manual-count-row"><label>Número de recetas<input id="manualPrintCount" type="number" min="1" max="100" step="1" value="2" inputmode="numeric"></label><div class="manual-batch-info"><strong id="manualBatchSummary">2 recetas · 1 hoja carta · 2 folios únicos</strong><small>2 recetas por hoja carta. Si eliges 20, se imprimen 10 hojas.</small></div></div><div class="manual-print-warning"><strong>Importante:</strong> en el diálogo de impresión del teléfono/computadora deja <b>Copias = 1</b>. La cantidad se controla aquí para que cada receta tenga un folio distinto.</div></div>
       <div class="manual-style-panel"><div><strong>Estilo de impresión</strong><small>Estas paletas solo modifican la plantilla manual.</small></div><div id="manualStyleGrid" class="manual-style-grid"></div><p class="micro" style="margin:8px 2px 0">Los folios manuales son aleatorios e independientes de la fecha. Cada receta del lote recibe un serial distinto y el lote se registra en tu bóveda local.</p></div>
       <div id="manualTemplatePreview" class="manual-template-preview"></div>
+      <div class="manual-batch-history"><div class="section-head"><div><strong>Lotes recientes</strong><small>Recupera los mismos folios si necesitas repetir una impresión.</small></div></div><div id="manualBatchHistory" aria-live="polite"></div></div>
       <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="regenerateManualFoliosBtn" class="btn secondary" type="button">Regenerar folios</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir lote</button></div>
     </div>
   </dialog>
@@ -339,6 +340,7 @@
   <div id="printArea" aria-hidden="true"></div>
   <script src="supabase-config.js"></script>
   <script src="runtime.js"></script>
+  <script src="native-print.js"></script>
   <script src="cloud.js"></script>
   <script src="qr.js"></script>
   <script src="secure-sync.js"></script>

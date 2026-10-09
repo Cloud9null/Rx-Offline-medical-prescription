@@ -440,13 +440,14 @@ function renderManualRxHalf(folio){
 function renderManualLetterPage(f1,f2=null,pageNo=1,totalPages=1){return `<section class="manual-letter-page" data-page="${pageNo}"><div class="manual-half-wrap">${renderManualRxHalf(f1)}</div><div class="manual-half-wrap ${f2?'':'manual-empty-half'}">${f2?renderManualRxHalf(f2):''}</div><div class="manual-cut-line"><span>CORTE</span></div><div class="manual-page-index">Hoja ${pageNo} de ${totalPages}</div></section>`}
 function renderManualLetterPages(){const folios=(state.manualPrintFolios?.length===state.manualPrintCount)?state.manualPrintFolios:generateManualFolios(state.manualPrintCount||2);const total=Math.ceil(folios.length/2);let out='';for(let p=0;p<total;p++)out+=renderManualLetterPage(folios[p*2],folios[p*2+1]||null,p+1,total);return out}
 function renderManualPreview(){const el=$('#manualTemplatePreview');if(el)el.innerHTML=renderManualLetterPages();const q=$('#manualPrintCount');if(q)q.value=String(state.manualPrintCount||2);const summary=$('#manualBatchSummary');if(summary){const pages=Math.ceil((state.manualPrintCount||2)/2);summary.textContent=`${state.manualPrintCount||2} receta(s) · ${pages} hoja(s) carta · ${state.manualPrintFolios?.length||0} folio(s) únicos`}}
+function renderManualBatchHistory(){const root=$('#manualBatchHistory');if(!root)return;const batches=(state.vault?.manualPrintLog||[]).slice(-10).reverse();root.innerHTML=batches.length?batches.map(b=>`<div class="manual-batch-row"><div><strong>${esc(b.batchId||'Lote anterior')}</strong><small>${esc(new Date(b.createdAt).toLocaleString('es-MX'))} · ${Number(b.recipeCount)||b.folios?.length||0} recetas · ${b.reprintOf?'Reimpresión solicitada':'Impresión solicitada'}</small></div><button class="btn secondary small" type="button" data-reprint-batch="${esc(b.batchId||'')}">Reimprimir folios</button></div>`).join(''):'<p class="micro">Aún no hay lotes solicitados.</p>';root.querySelectorAll('[data-reprint-batch]').forEach(button=>button.addEventListener('click',()=>{const batch=(state.vault.manualPrintLog||[]).find(b=>b.batchId===button.dataset.reprintBatch);if(!batch||!Array.isArray(batch.folios)||!batch.folios.length)return toast('No se encontraron los folios de este lote');state.manualPrintCount=batch.folios.length;state.manualPrintFolios=[...batch.folios];state.manualReprintBatchId=batch.batchId;state.vault.settings.manualPrintTheme=batch.theme||'burgundyGold';renderManualStyleGrid();renderManualPreview();toast('Folios originales cargados. Pulsa Imprimir lote para repetirlos.')}));}
 function openManualTemplate(){
   state.vault.settings.manualPrintTheme=state.vault.settings.manualPrintTheme||'burgundyGold';
   state.manualPrintCount=clampManualCount(state.manualPrintCount||2);
-  generateManualFolios(state.manualPrintCount);renderManualStyleGrid();renderManualPreview();$('#manualTemplateDialog').showModal();
+  state.manualReprintBatchId=null;generateManualFolios(state.manualPrintCount);renderManualStyleGrid();renderManualPreview();renderManualBatchHistory();$('#manualTemplateDialog').showModal();
 }
-function regenerateManualFolios(){generateManualFolios(state.manualPrintCount||2);renderManualPreview();toast(`Se generaron ${state.manualPrintFolios.length} folios nuevos`)}
-function changeManualPrintCount(){const q=clampManualCount($('#manualPrintCount')?.value||2);state.manualPrintCount=q;generateManualFolios(q);renderManualPreview();}
+function regenerateManualFolios(){state.manualReprintBatchId=null;generateManualFolios(state.manualPrintCount||2);renderManualPreview();toast(`Se generaron ${state.manualPrintFolios.length} folios nuevos`)}
+function changeManualPrintCount(){const q=clampManualCount($('#manualPrintCount')?.value||2);state.manualPrintCount=q;state.manualReprintBatchId=null;generateManualFolios(q);renderManualPreview();}
 function clearManualPrintMode(){document.getElementById('manualPrintPageStyle')?.remove();$('#printArea').classList.remove('manual-print-area')}
 async function printManualTemplate(){
   clearManualPrintMode();
@@ -455,14 +456,15 @@ async function printManualTemplate(){
   const folios=[...state.manualPrintFolios];
   const batchId='BATCH-'+crypto.randomUUID().slice(0,8).toUpperCase();
   state.vault.manualPrintLog=Array.isArray(state.vault.manualPrintLog)?state.vault.manualPrintLog:[];
-  state.vault.manualPrintLog.push({batchId,folios,recipeCount:count,sheetCount:Math.ceil(count/2),createdAt:new Date().toISOString(),theme:state.vault.settings.manualPrintTheme||'burgundyGold'});
-  if(state.vault.manualPrintLog.length>200)state.vault.manualPrintLog=state.vault.manualPrintLog.slice(-200);
+  state.vault.manualPrintLog.push({batchId,folios,recipeCount:count,sheetCount:Math.ceil(count/2),createdAt:new Date().toISOString(),theme:state.vault.settings.manualPrintTheme||'burgundyGold',status:'print_requested',reprintOf:state.manualReprintBatchId||null});
+  state.manualReprintBatchId=batchId;
   await saveVault();
+  renderManualBatchHistory();
   const area=$('#printArea');area.innerHTML=renderManualLetterPages();area.classList.add('manual-print-area');
   const style=document.createElement('style');style.id='manualPrintPageStyle';style.textContent='@media print{@page{size:letter portrait;margin:0}#printArea.manual-print-area{width:8.5in!important;margin:0!important;padding:0!important}#printArea.manual-print-area .manual-letter-page{display:block!important;width:8.5in!important;height:11in!important;margin:0!important;box-shadow:none!important;break-after:page!important;page-break-after:always!important}#printArea.manual-print-area .manual-letter-page:last-child{break-after:auto!important;page-break-after:auto!important}}';document.head.appendChild(style);
-  toast(`${count} folios registrados. En el diálogo de impresión deja Copias = 1.`);setTimeout(()=>window.print(),140);
+  toast(`${count} folios registrados. La impresión física se confirma en el sistema. Deja Copias = 1.`);setTimeout(()=>window.ClinovyraPrint.print(`Clinovyra - ${batchId}`).catch(e=>toast(e.message)),140);
 }
-async function printRecipe(rec){clearManualPrintMode();await ensureVerificationToken(rec);$('#printArea').innerHTML=renderRxSheet(rec);setTimeout(()=>window.print(),80)}
+async function printRecipe(rec){clearManualPrintMode();await ensureVerificationToken(rec);$('#printArea').innerHTML=renderRxSheet(rec);setTimeout(()=>window.ClinovyraPrint.print(`Clinovyra - ${rec.id}`).catch(e=>toast(e.message)),80)}
 function duplicateRecipe(rec){navigate('rx');$('#rxPatient').value=rec.patient.id;updateSelectedPatient();$('#rxGeneral').value=rec.general||'';$('#medicationList').innerHTML='';state.medSeq=0;rec.medications.forEach(m=>addMedication(m));toast('Receta copiada como borrador nuevo')}
 async function voidRecipe(rec){const reason=prompt('Motivo breve de anulación (opcional):','');if(reason===null)return;rec.status='void';rec.voidedAt=new Date().toISOString();rec.voidReason=reason.trim();await saveVault();renderHistory();queueCloudSync();toast('Receta anulada; el registro original se conserva')}
 function renderRecoveryState(){const enabled=!!state.vault?.settings?.recovery?.enabled,button=$('#enableRecoveryBtn'),status=$('#recoveryStatus');if(button)button.textContent=enabled?'Generar nuevo código':'Configurar recuperación';if(status)status.textContent=enabled?'Recuperación cifrada activa. El código no se guarda en este dispositivo; consérvalo fuera de línea.':'Todavía no configurada. Sin el respaldo o código, una bóveda perdida no puede recuperarse.'}
