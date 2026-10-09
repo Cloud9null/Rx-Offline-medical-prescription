@@ -81,21 +81,20 @@
       <main class="content">
         <section id="screen-home" class="screen active">
           <div class="hero-panel">
-            <div><span class="eyebrow">EXPEDIENTE + PRESCRIPCIÓN LOCAL-FIRST</span><h2>Atención clínica completa, privada y eficiente.</h2><p>Documenta la consulta o emite una receta directa. La bóveda local cifrada sigue siendo la fuente primaria del dispositivo.</p></div>
-            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota IA rápida</button></div>
+            <div class="hero-copy"><span class="eyebrow">CLINOVYRA · CONSULTORIO PERSONAL</span><h2>Tu jornada clínica, en orden.</h2><p>Abre una consulta, consulta el expediente o prepara una receta. Tus borradores y el talonario manual siguen disponibles sin conexión en este dispositivo.</p><div class="hero-private"><span aria-hidden="true">◈</span> Bóveda cifrada en este dispositivo</div></div>
+            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota rápida</button></div>
           </div>
-          <div class="clinovyra-signature" aria-label="Clinovyra EMR y prescripción electrónica"><img src="assets/clinovyra-brand.jpeg" alt="Clinovyra · EMR · E-Prescribing" loading="lazy"></div>
+          <div class="home-section-heading"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h3>Continúa tu trabajo</h3></div><span>Un acceso por tarea</span></div>
+          <div class="home-task-grid" aria-label="Accesos clínicos"><button type="button" data-nav="patients" class="home-task"><span class="home-task-icon" aria-hidden="true">♙</span><strong>Pacientes</strong><small>Buscar o dar de alta</small></button><button type="button" data-nav="emr" class="home-task"><span class="home-task-icon" aria-hidden="true">▤</span><strong>Expedientes</strong><small>Notas y consultas</small></button><button type="button" data-nav="history" class="home-task"><span class="home-task-icon" aria-hidden="true">◷</span><strong>Recetas emitidas</strong><small>Historial e impresión</small></button></div>
           <div class="metric-grid">
             <button class="metric-card" data-nav="patients" type="button"><span>Pacientes</span><strong id="patientCount">0</strong><small>Alta y búsqueda local</small></button>
             <button class="metric-card" data-nav="emr" type="button"><span>Consultas</span><strong id="encounterCount">0</strong><small id="draftCount">0 borradores</small></button>
             <button class="metric-card" data-nav="history" type="button"><span>Recetas</span><strong id="recipeCount">0</strong><small>Emitidas e inmutables</small></button>
             <button class="metric-card" data-nav="settings" type="button"><span>Seguridad</span><strong>Local</strong><small>AES-GCM + firma ECDSA</small></button>
           </div>
-          <div class="premium-card notice"><strong>Local-first + nube</strong><p>La bóveda sigue funcionando offline. Cuando conectes Supabase, pacientes y recetas se sincronizan entre tus dispositivos sin perder la copia local.</p></div>
           <div class="premium-card manual-template-card">
-            <div class="card-title"><span>✎</span><h3>Receta manual de contingencia</h3></div>
-            <p class="muted">Genera una hoja tamaño carta con <strong>2 recetas media carta</strong> listas para llenar y firmar a mano. Incluye tu membrete y únicamente el QR de verificación de cédula profesional.</p>
-            <button id="manualTemplateBtn" class="btn secondary full" type="button">Imprimir recetas manuales por lote</button>
+            <div><span class="eyebrow">DISPONIBLE SIN CONEXIÓN</span><h3>Recetas manuales</h3><p class="muted">Imprime <strong>dos recetas media carta por hoja</strong>, con tu membrete y QR de cédula, para llenar y firmar a mano cuando lo necesites.</p></div>
+            <button id="manualTemplateBtn" class="btn secondary" type="button">Preparar talonario imprimible</button>
           </div>
         </section>
 

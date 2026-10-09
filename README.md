@@ -1,5 +1,7 @@
 # Clinovyra EMR — desarrollo de apps nativas
 
+Para conocer el flujo GitHub → preview Vercel → Supabase → pruebas y el significado de los archivos, consulta la [guía práctica de 55 minutos](docs/GUIA_RAPIDA_PROYECTO.md).
+
 Expediente clínico local-first con receta electrónica Rx Offline integrada. La receta directa sigue disponible sin crear una consulta o nota. Esta rama prepara apps Android, iPhone y Windows, junto con la PWA existente. La producción continúa en la versión publicada hasta revisar y promover estos cambios.
 
 ## Capacidades

@@ -16,6 +16,20 @@ Clinovyra personal: paciente longitudinal, antecedentes/alergias, consulta y not
 | [Medilink México](https://www.softwaremedilink.com/mx) | Ficha personalizable, evoluciones, recetas, documentos, agenda por profesional y pagos. | Agenda clínica y formularios por especialidad vinculados al expediente, manteniendo flujo de consulta sencillo. | Convertir la consulta en un sistema de menús de administración extensos. |
 | [SaludTotal](https://saludtotal.mx/es/) | Portal paciente, agenda, receta integrada con un tercero, reportes y transcripción de consulta según el proveedor. | Portal mínimo con acceso selectivo, recordatorios consentidos y tablero de operación. | Prometer validación farmacéutica o precisión de IA sin servicio y evaluación propios. |
 | [Luna Salud](https://www.lunasalud.mx/) y [expediente](https://www.lunasalud.mx/expediente-medico-electronico) | Agenda, ingresos/cobranza, transcripción asistida y bitácora clínica según el proveedor. | Consentimientos y trazabilidad de cada acceso, flujo de captura breve, pagos/facturación como módulo posterior. | Tratar la afirmación de cumplimiento de un proveedor como prueba de certificación de Clinovyra. |
+| [Nimbo Clinical](https://www.nimbo-x.com/clinical) | Expediente en una pantalla, búsqueda, historia configurable y gráficas de signos vitales según el proveedor. | Resumen longitudinal visible y acceso al historial con menos saltos de pantalla; detección de duplicados antes de incorporar importaciones. | Mezclar ERP, inventario y marketing en la portada clínica personal. |
+
+## Revisión de interfaz para la edición personal
+
+Las páginas públicas de Medilink, Luna, SaludTotal y Nimbo permiten identificar sus flujos y algunas imágenes promocionales; no proporcionan acceso autenticado para medir sus pantallas internas ni sus tiempos de tarea. Estos criterios son decisiones de diseño derivadas de esa revisión y de la interfaz real de Clinovyra, no una copia de sus interfaces.
+
+| Criterio | Cambio aplicado ahora | Próxima medición con datos sintéticos |
+|---|---|---|
+| Primer vistazo orientado a la consulta | Portada menos promocional, acciones directas de consulta y receta; pacientes, expediente e historial juntos. | ¿Se encuentra una consulta o receta en dos toques desde Inicio? |
+| Receta original siempre visible | Talonario manual destacado en Inicio, con explicación breve de impresión offline. | Probar la vista previa y dos medias cartas en impresora real. |
+| Jerarquía clínica | Tipografía, contraste, foco visible, áreas táctiles y paneles sobrios; el cristal se limita a controles y capas donde el texto sigue legible. | Revisar iPhone, Windows, alto contraste, zoom 200 % y movimiento reducido. |
+| Datos y privacidad | Caché PWA restringida a archivos estáticos conocidos; API y rutas de verificación fuera de Cache Storage. | Inspeccionar almacenamiento del navegador, cierre de sesión, recuperación y revocación en equipo físico. |
+
+La siguiente iteración personal debe resolver con pruebas clínicas: búsqueda de paciente duplicado, continuación de borradores, impresión y recuperación, estados de sincronización claramente distinguibles y ergonomía de la nota. Agenda de varios profesionales, portal, pagos y colaboración pertenecen a la fase comercial y requieren antes roles y aislamiento por consultorio.
 
 ## Brechas reales y orden de trabajo
 
