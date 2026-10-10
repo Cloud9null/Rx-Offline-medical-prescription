@@ -19,5 +19,23 @@ const gradle=join(root,'android/app/build.gradle');
 let config=await readFile(gradle,'utf8');
 if(!/versionCode\s+\d+/.test(config)||!/versionName\s+"[^"]+"/.test(config))throw new Error('No se encontró la versión nativa de Android.');
 config=config.replace(/versionCode\s+\d+/,'versionCode 360').replace(/versionName\s+"[^"]+"/,'versionName "3.6.0"');
+// La firma de release se inyecta desde secretos del entorno en cada compilación.
+// No se genera una clave nueva en CI: perderla impediría actualizar la app instalada.
+const signing=`    signingConfigs {
+        clinovyraRelease {
+            if (System.getenv('CLINOVYRA_KEYSTORE_PATH')) {
+                storeFile file(System.getenv('CLINOVYRA_KEYSTORE_PATH'))
+                storePassword System.getenv('CLINOVYRA_KEY_PASSWORD')
+                keyAlias 'clinovyra-emr'
+                keyPassword System.getenv('CLINOVYRA_KEY_PASSWORD')
+            }
+        }
+    }
+`;
+if(!config.includes('clinovyraRelease')){
+  if(!/^\s*buildTypes\s*\{/m.test(config)||!/release\s*\{/.test(config))throw new Error('No se encontró buildTypes.release de Android.');
+  config=config.replace(/^(\s*)buildTypes\s*\{/m,(_match,indent)=>signing+indent+'buildTypes {');
+  config=config.replace(/(release\s*\{)/,`$1\n            if (System.getenv('CLINOVYRA_KEYSTORE_PATH')) signingConfig signingConfigs.clinovyraRelease`);
+}
 await writeFile(gradle,config);
-console.log('Android 3.6.0 (360): respaldo local desactivado, biometría y protección de capturas activadas.');
+console.log('Android 3.6.0 (360): release con firma persistente, respaldo local desactivado, biometría y protección de capturas activadas.');

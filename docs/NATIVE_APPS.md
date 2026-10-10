@@ -6,7 +6,7 @@ La aplicación mantiene el mismo modelo clínico, la bóveda local y el proyecto
 
 | Plataforma | Proyecto | Salida de prueba | Condición para distribución habitual |
 |---|---|---|---|
-| Android | Capacitor 8, `native/android` generado | APK de depuración | Keystore privada, build release y pruebas físicas |
+| Android | Capacitor 8, `native/android` generado | APK release firmado con clave permanente | Configurar la clave privada y probar la actualización en dispositivo |
 | iPhone/iPad | Capacitor 8, `native/ios` generado | Proyecto Xcode y compilación de simulador en CI | Mac, Xcode, Apple Developer, firma y perfil de aprovisionamiento para IPA/TestFlight |
 | Windows | Electron, protocolo local seguro `app://clinovyra.local` | EXE NSIS/portable sin firma | Certificado Authenticode, revisión SmartScreen y pruebas Windows |
 | Web/PWA | Vercel | Preview HTTPS del PR para pruebas inmediatas | Producción tras revisión de seguridad y flujo clínico |
@@ -52,3 +52,7 @@ Si el proyecto nativo ya existe, usa `npm run android:sync` o `npm run ios:sync`
 5. Para iOS revisa la política de privacidad, permisos y comportamiento WebKit en hardware. Un IPA instalable requiere firma de Apple; un entorno Linux no lo produce.
 
 Los metadatos clínicos de Supabase usan Auth/RLS, **no cifrado de extremo a extremo por campo**. La bóveda y documentos sincronizados sí están cifrados en cliente según los módulos actuales. Mantén copia del código de recuperación y respaldo verificado.
+
+## Actualizaciones y firmas
+
+Consulta [Actualizaciones instaladas](NATIVE_UPDATES.md) para los identificadores, la firma permanente Android, la transición desde el APK de depuración, AltStore en iPhone y la continuidad del instalador Windows. El workflow no publicará un APK release sin una clave privada persistente y su huella esperada.

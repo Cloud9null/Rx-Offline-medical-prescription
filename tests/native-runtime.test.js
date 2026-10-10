@@ -44,6 +44,24 @@ test('Android rebuilds disable operating-system backup of the local clinical vau
   assert.match(pkg.scripts['android:sync'],/android:harden/);
 });
 
+test('installable packages keep local assets and stable identities; Android release requires persistent signing',()=>{
+  const pkg=JSON.parse(fs.readFileSync(path.join(__dirname,'../native/package.json'),'utf8'));
+  const harden=fs.readFileSync(path.join(__dirname,'../native/harden-android.mjs'),'utf8');
+  const workflow=fs.readFileSync(path.join(__dirname,'../.github/workflows/clinovyra-native.yml'),'utf8');
+  const desktop=fs.readFileSync(path.join(__dirname,'../native/electron-main.cjs'),'utf8');
+  assert.equal(pkg.build.appId,'com.clinovyra.emr');
+  assert.match(desktop,/const HOST='clinovyra\.local'/);
+  assert.match(desktop,/const ORIGIN=`app:\/\/\$\{HOST\}`/);
+  assert.match(desktop,/win\.loadURL\(`\$\{ORIGIN\}\/index\.html`\)/);
+  assert.match(harden,/keyAlias 'clinovyra-emr'/);
+  assert.match(harden,/CLINOVYRA_KEYSTORE_PATH/);
+  assert.match(workflow,/base64 --decode/);
+  assert.match(workflow,/CLINOVYRA_ANDROID_CERT_SHA256/);
+  assert.match(workflow,/assembleRelease/);
+  assert.match(workflow,/verify --verbose --print-certs/);
+  assert.doesNotMatch(workflow,/assembleDebug|app-debug\.apk/);
+});
+
 test('mobile biometric unlock retrieves a hardware-protected key, never a plain credential',async()=>{
   const source=fs.readFileSync(path.join(__dirname,'../native-biometric.js'),'utf8');
   const calls=[];
