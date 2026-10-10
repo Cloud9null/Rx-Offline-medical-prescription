@@ -64,7 +64,10 @@ test('manual PDF reserves once, opens real PDF and reuses original folios after 
   await page.locator('#manualPrintCount').fill('3');await page.locator('#manualPrintCount').dispatchEvent('change');
   await expect(page.locator('#manualTemplatePreview .manual-letter-page')).toHaveCount(2);
   const originals=await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents();
+  await page.evaluate(()=>{const build=window.ClinovyraManualPDF.build;window.ClinovyraManualPDF={...window.ClinovyraManualPDF,build:options=>{window.__manualPdfPages=options.pagesHtml;return build(options)}}});
   await page.locator('#printManualTemplateBtn').click();await expect(page.locator('#openManualPdfBtn')).toBeVisible();
+  const sameLayout=await page.evaluate(()=>window.__manualPdfPages.every((html,i)=>{const sheet=document.createElement('div');sheet.innerHTML=html;return sheet.firstElementChild.outerHTML===document.querySelectorAll('#manualTemplatePreview .manual-letter-page')[i].outerHTML}));
+  expect(sameLayout).toBe(true);
   expect(originals).toHaveLength(3);expect(new Set(originals).size).toBe(3);
   await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
   await expect(page.locator('#manualBatchHistory')).toContainText('impresión no confirmada');
