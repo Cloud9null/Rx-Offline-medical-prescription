@@ -124,6 +124,33 @@ test('settings exposes session controls without hiding local security',async({pa
   await expect(page.locator('#biometricCapability')).toBeVisible();await expect(page.locator('#lockNowBtn')).toBeVisible();
 });
 
+test('backup import verifies its PIN before replacing the local vault',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-backup-123');await page.locator('#setupPin2').fill('synthetic-backup-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await page.locator('#profileName').fill('Perfil del respaldo');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('#exportBackupBtn').click();
+  const download=await downloadPromise;
+  const backup=require('fs').readFileSync(await download.path());
+  await page.locator('#profileName').fill('Perfil actual');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  let pin='incorrecto';
+  page.on('dialog',dialog=>dialog.type()==='prompt'?dialog.accept(pin):dialog.accept());
+  await page.locator('#importBackupInput').setInputFiles({name:'respaldo.json',mimeType:'application/json',buffer:backup});
+  await expect(page.locator('#toast')).toContainText('PIN del respaldo es incorrecto');
+  await expect(page.locator('#profileName')).toHaveValue('Perfil actual');
+  pin='synthetic-backup-123';
+  await page.locator('#importBackupInput').setInputFiles({name:'respaldo.json',mimeType:'application/json',buffer:backup});
+  await expect(page.locator('#unlockView')).toBeVisible();
+  await page.locator('#unlockPin').fill(pin);
+  await page.locator('#unlockForm').getByRole('button',{name:'Desbloquear'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await expect(page.locator('#profileName')).toHaveValue('Perfil del respaldo');
+});
+
 test('vault PIN rotates without data loss and night mode remains reversible',async({page})=>{
   await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-old-pin-123');await page.locator('#setupPin2').fill('synthetic-old-pin-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();

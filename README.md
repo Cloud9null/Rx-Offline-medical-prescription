@@ -17,6 +17,7 @@ Expediente clínico local-first con receta electrónica Rx Offline integrada. La
 - Copiar, compartir o descargar la nota como `.txt` estándar. Estas funciones no intentan eludir políticas o restricciones de otro sistema.
 - Documentos PDF/JPEG/PNG cifrados antes de salir del dispositivo; Supabase Storage solo recibe ciphertext en un bucket privado owner-scoped.
 - Recuperación segura entre dispositivos mediante código aleatorio, PBKDF2-SHA-256 y sobre AES-GCM. El servidor nunca recibe la llave maestra ni el código en claro.
+- La importación de un respaldo local comprueba el PIN y descifra el contenido antes de sustituir la bóveda; rechaza respaldos ligados a otra cuenta y escribe metadatos y contenido en una sola transacción.
 - Supabase Auth/RLS y sincronización owner-only con cola, backoff y conflictos explícitos.
 - Acceso personal en dos capas: allowlist de propietario en Supabase y PIN/Face ID de la bóveda en cada dispositivo. El dominio público no permite crear una bóveda sin autorizar primero la cuenta.
 - Panel de dispositivos con sesiones reales de Supabase Auth, fecha/última actividad, red parcialmente enmascarada, revocación individual, cierre de todas las demás sesiones y desautorización local.

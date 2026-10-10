@@ -74,6 +74,7 @@ async function decryptRaw(key,obj){return new Uint8Array(await crypto.subtle.dec
 function openDb(){return new Promise((res,rej)=>{const r=indexedDB.open('rxOfflineV2',2);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains('meta'))db.createObjectStore('meta',{keyPath:'id'});if(!db.objectStoreNames.contains('vault'))db.createObjectStore('vault',{keyPath:'id'});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);})}
 function dbGet(store,id){return new Promise((res,rej)=>{const tx=state.db.transaction(store,'readonly'),r=tx.objectStore(store).get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);})}
 function dbPut(store,obj){return new Promise((res,rej)=>{const tx=state.db.transaction(store,'readwrite'),r=tx.objectStore(store).put(obj);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);})}
+function replaceLocalBackup(meta,payload){return new Promise((res,rej)=>{const tx=state.db.transaction(['meta','vault'],'readwrite');tx.objectStore('meta').put(meta);tx.objectStore('vault').put(payload);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('No se pudo guardar el respaldo.'));})}
 async function saveVault(){if(!state.vaultKey||!state.vault)return;const bytes=enc.encode(JSON.stringify(state.vault)),box=await encryptRaw(state.vaultKey,bytes);await dbPut('vault',{id:'payload',...box,updatedAt:new Date().toISOString()});}
 async function loadVault(key){const box=await dbGet('vault','payload');if(!box)throw new Error('No se encontró la bóveda.');const bytes=await decryptRaw(key,box);return JSON.parse(dec.decode(bytes))}
 async function keyFingerprint(publicJwk){const d=await sha256Bytes(`${publicJwk.x}.${publicJwk.y}`);return Array.from(d.slice(0,8)).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase().match(/.{1,4}/g).join('-')}
@@ -256,8 +257,8 @@ async function migrateProfileDefaults(){
   state.vault.settings=state.vault.settings||{};
   let changed=false;
   if(Number(state.vault.settings.profileDataVersion||0)<26){
-    state.vault.profile.university='Universidad del Valle de Mexico';
-    state.vault.profile.address='Heron Ramirez #680, Reynosa Tamaulipas C.P 88630. MEX';
+    if(!state.vault.profile.university)state.vault.profile.university='Universidad del Valle de Mexico';
+    if(!state.vault.profile.address)state.vault.profile.address='Heron Ramirez #680, Reynosa Tamaulipas C.P 88630. MEX';
     state.vault.settings.logoStyle=state.vault.settings.logoStyle||'monogram';
     (state.vault.patients||[]).forEach(p=>{const sx=sexCode(p.sex)||'F';if(p.sex!==sx){p.sex=sx;changed=true;}});
     state.vault.settings.profileDataVersion=26;
@@ -514,7 +515,29 @@ async function saveProfile(e){e.preventDefault();Object.assign(state.vault.profi
 async function saveProfileSignature(){const data=state.profilePad.data();if(!data)return toast('Dibuja primero tu firma.');state.vault.profile.signature=data;await saveVault();queueCloudSync();toast('Firma guardada localmente')}
 async function updateStorageStatus(){const el=$('#storageStatus');try{const e=await navigator.storage?.estimate?.();const persistent=await navigator.storage?.persisted?.();if(e){const used=(e.usage/1024/1024).toFixed(1),quota=(e.quota/1024/1024).toFixed(0);el.textContent=`Uso aproximado: ${used} MB de ${quota} MB. Persistencia del navegador: ${persistent?'sí':'no/indeterminada'}.`}else el.textContent='IndexedDB cifrado en este navegador. Exporta respaldos periódicos.';}catch{el.textContent='IndexedDB cifrado en este navegador. Exporta respaldos periódicos.'}}
 async function exportBackup(){const payload=await dbGet('vault','payload'),meta=JSON.parse(JSON.stringify(state.meta));meta.biometric=null;const backup={format:'rx-offline-v2-backup',createdAt:new Date().toISOString(),meta,payload};const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download=`rx-offline-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Respaldo cifrado exportado')}
-async function importBackup(file){const text=await file.text(),obj=JSON.parse(text);if(obj.format!=='rx-offline-v2-backup'||!obj.meta?.wrappedVaultKey||!obj.payload?.data)throw new Error('Archivo de respaldo no válido.');if(!confirm('Esto reemplazará la bóveda local de este dispositivo. ¿Continuar?'))return;const prior=state.meta?.biometric;obj.meta.id='setup';obj.meta.biometric=null;obj.meta.vaultInstanceId=b64url(randomBytes(24));obj.meta.ownerIdHash=state.meta?.ownerIdHash||state.accessOwnerHash;obj.meta.deviceAuthorizedAt=new Date().toISOString();obj.meta.version=Math.max(4,Number(obj.meta.version||0));obj.payload.id='payload';await dbPut('meta',obj.meta);await dbPut('vault',obj.payload);if(prior?.mode==='native')await window.ClinovyraBiometric.remove(prior.server).catch(()=>{});alert('Respaldo importado. La app se reiniciará; desbloquéala con el PIN del respaldo.');location.reload()}
+async function importBackup(file){
+  const obj=JSON.parse(await file.text());
+  if(obj.format!=='rx-offline-v2-backup'||!obj.meta?.salt||!obj.meta?.wrappedVaultKey?.iv||!obj.meta?.wrappedVaultKey?.data||!obj.payload?.iv||!obj.payload?.data)throw new Error('Archivo de respaldo no válido.');
+  const owner=state.meta?.ownerIdHash||state.accessOwnerHash;
+  if(obj.meta.ownerIdHash&&owner&&obj.meta.ownerIdHash!==owner)throw new Error('Este respaldo pertenece a otra cuenta. No se importó.');
+  const pin=prompt('Escribe el PIN o contraseña del respaldo para comprobarlo antes de reemplazar esta bóveda:');
+  if(pin===null)return;
+  let restored;
+  try{
+    const pinKey=await derivePinKey(pin,unb64(obj.meta.salt));
+    const raw=await decryptRaw(pinKey,obj.meta.wrappedVaultKey);
+    const vaultKey=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},true,['encrypt','decrypt']);
+    restored=JSON.parse(dec.decode(await decryptRaw(vaultKey,obj.payload)));
+  }catch{throw new Error('El PIN del respaldo es incorrecto o el archivo está dañado. No se modificó la bóveda actual.');}
+  if(!restored?.signing?.privateJwk||!Array.isArray(restored.patients)||!Array.isArray(restored.recipes))throw new Error('El respaldo no contiene una bóveda válida. No se modificó la bóveda actual.');
+  if(!confirm('Respaldo verificado. Esto reemplazará la bóveda local de este dispositivo. ¿Continuar?'))return;
+  const prior=state.meta?.biometric;
+  const meta={...obj.meta,id:'setup',biometric:null,vaultInstanceId:b64url(randomBytes(24)),ownerIdHash:owner||null,deviceAuthorizedAt:new Date().toISOString(),version:Math.max(4,Number(obj.meta.version||0))};
+  const payload={...obj.payload,id:'payload'};
+  await replaceLocalBackup(meta,payload);
+  if(prior?.mode==='native')await window.ClinovyraBiometric.remove(prior.server).catch(()=>{});
+  alert('Respaldo importado. La app se reiniciará; desbloquéala con el PIN del respaldo.');location.reload();
+}
 function bindEvents(){
   $('#accessForm')?.addEventListener('submit',submitAccess);$('#menuBtn')?.addEventListener('click',toggleNavigation);$('#dockMoreBtn')?.addEventListener('click',toggleNavigation);$('#navBackdrop')?.addEventListener('click',closeNavigation);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNavigation()});
   $('#setupForm').addEventListener('submit',async e=>{e.preventDefault();const p=$('#setupPin').value,p2=$('#setupPin2').value;if(p.length<8)return toast('Usa al menos 8 caracteres.');if(p!==p2)return toast('Los PIN no coinciden.');try{await setupVault(p);$('#setupPin').value=$('#setupPin2').value='';await afterUnlock();toast('Bóveda creada')}catch(err){toast('No se pudo crear: '+err.message)}});
