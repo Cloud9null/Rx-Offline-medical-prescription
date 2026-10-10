@@ -220,7 +220,20 @@ function updateNightModeControl(id){const t=themes.find(x=>x.id===id)||themes[0]
 function applyTheme(id){const t=themes.find(x=>x.id===id)||themes[0];for(const k of ['primary','secondary','accent','bg','panel','panel2','text','muted','line'])document.documentElement.style.setProperty(`--${k}`,t[k]);document.documentElement.dataset.themeMode=t.dark?'dark':'light';document.documentElement.style.colorScheme=t.dark?'dark':'light';document.querySelector('meta[name="theme-color"]').setAttribute('content',t.primary);$$('.theme-card').forEach(x=>{x.classList.toggle('active',x.dataset.theme===t.id);x.setAttribute('aria-pressed',String(x.dataset.theme===t.id))});updateNightModeControl(t.id)}
 async function toggleNightMode(){const current=themes.find(x=>x.id===state.vault.settings.theme)||themes[0];if(current.dark){state.vault.settings.lastDarkTheme=current.id;state.vault.settings.theme=state.vault.settings.lastLightTheme||'clinovyra'}else{state.vault.settings.lastLightTheme=current.id;state.vault.settings.theme=state.vault.settings.lastDarkTheme||'clinovyraNight'}applyTheme(state.vault.settings.theme);await saveVault();toast(themes.find(x=>x.id===state.vault.settings.theme)?.dark?'Modo nocturno activado':'Tema claro restaurado')}
 function themeCard(t){return `<button class="theme-card" data-theme="${t.id}" type="button"><div class="theme-preview" style="background:${t.bg}"><div style="background:${t.primary}"></div><div><span style="background:${t.secondary}"></span><span style="background:${t.panel2}"></span></div></div><strong>${esc(t.name)}</strong><small>${esc(t.desc)}</small></button>`}
-function renderThemeGrid(){const g=$('#themeGrid'),featured=['clinovyra','glacierPearl','sageAtelier','clinovyraNight','prismNight','petrolNoir'],selected=state.vault?.settings?.theme||'midnightGold',more=themes.filter(t=>!featured.includes(t.id));g.innerHTML=`<div class="theme-group-title"><strong>Colección Clinovyra</strong><small>Claros y Temas nocturnos</small></div>${featured.map(id=>themeCard(themes.find(t=>t.id===id))).join('')}<details class="theme-more" ${featured.includes(selected)?'':'open'}><summary>Explorar las ${more.length} paletas anteriores</summary><div class="theme-more-grid">${more.map(themeCard).join('')}</div></details>`;g.querySelectorAll('.theme-card').forEach(b=>b.addEventListener('click',async()=>{const t=themes.find(x=>x.id===b.dataset.theme);state.vault.settings.theme=b.dataset.theme;if(t?.dark)state.vault.settings.lastDarkTheme=t.id;else state.vault.settings.lastLightTheme=t?.id;applyTheme(b.dataset.theme);await saveVault();toast('Tema actualizado');}));applyTheme(selected)}
+function renderThemeGrid(){
+  const g=$('#themeGrid'),featured=['clinovyra','glacierPearl','sageAtelier','clinovyraNight','prismNight','petrolNoir'];
+  const selected=state.vault?.settings?.theme||'midnightGold',more=themes.filter(t=>!featured.includes(t.id));
+  const group=(title,items)=>`<section class="theme-section"><h3>${title}</h3><div class="theme-options">${items.map(themeCard).join('')}</div></section>`;
+  g.innerHTML=group('Temas claros',featured.slice(0,3).map(id=>themes.find(t=>t.id===id)))+
+    group('Temas nocturnos',featured.slice(3).map(id=>themes.find(t=>t.id===id)))+
+    `<details class="theme-more" ${featured.includes(selected)?'':'open'}><summary>Explorar las ${more.length} paletas anteriores</summary><div class="theme-more-grid">${group('Más temas claros',more.filter(t=>!t.dark))}${group('Más temas nocturnos',more.filter(t=>t.dark))}</div></details>`;
+  g.querySelectorAll('.theme-card').forEach(b=>b.addEventListener('click',async()=>{
+    const t=themes.find(x=>x.id===b.dataset.theme);state.vault.settings.theme=b.dataset.theme;
+    if(t?.dark)state.vault.settings.lastDarkTheme=t.id;else state.vault.settings.lastLightTheme=t?.id;
+    applyTheme(b.dataset.theme);await saveVault();toast('Tema actualizado');
+  }));
+  applyTheme(selected);
+}
 function renderLogoGrid(){const g=$('#logoGrid');if(!g)return;g.innerHTML=logoStyles.map(l=>`<button class="logo-card ${state.vault?.settings?.logoStyle===l.id?'active':''}" data-logo-style="${l.id}" type="button"><div class="logo-mini logo-mini-${l.id}"><span class="lm-a">Rx</span><span class="lm-b">Dr</span><span class="lm-c"></span></div><strong>${esc(l.name)}</strong><small>${esc(l.desc)}</small></button>`).join('');g.querySelectorAll('[data-logo-style]').forEach(b=>b.addEventListener('click',async()=>{state.vault.settings.logoStyle=b.dataset.logoStyle;await saveVault();renderLogoGrid();toast('Logo actualizado');}));}
 class SignaturePad{
   constructor(canvas){this.canvas=canvas;this.ctx=canvas.getContext('2d');this.drawing=false;this.dirty=false;this.ctx.lineCap='round';this.ctx.lineJoin='round';this.ctx.strokeStyle='#162a3a';this.ctx.lineWidth=5;canvas.addEventListener('pointerdown',e=>this.start(e));canvas.addEventListener('pointermove',e=>this.move(e));['pointerup','pointercancel','pointerleave'].forEach(ev=>canvas.addEventListener(ev,e=>this.end(e)));}
@@ -388,6 +401,38 @@ function updateDock(name){
   for(const button of buttons){button.classList.toggle('active',button===active);if(button===active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current')}
   const index=active?buttons.indexOf(active):4;dock.style.setProperty('--dock-index',String(index));
   $('#dockMoreBtn')?.classList.toggle('active',!active);
+}
+function bindDockSwipe(){
+  const dock=$('#mobileDock');if(!dock)return;
+  let gesture=null,suppressClickUntil=0;
+  dock.addEventListener('click',e=>{if(Date.now()<suppressClickUntil){e.preventDefault();e.stopImmediatePropagation()}},true);
+  dock.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'||!e.isPrimary||!e.target.closest('button'))return;
+    gesture={id:e.pointerId,x:e.clientX,y:e.clientY,dragging:false};
+  });
+  dock.addEventListener('pointermove',e=>{
+    if(!gesture||gesture.id!==e.pointerId)return;
+    const dx=e.clientX-gesture.x,dy=e.clientY-gesture.y;
+    if(!gesture.dragging){if(Math.abs(dx)<12||Math.abs(dx)<Math.abs(dy)*1.2)return;gesture.dragging=true;dock.classList.add('dragging');try{dock.setPointerCapture(e.pointerId)}catch{}}
+    e.preventDefault();const rect=dock.getBoundingClientRect();
+    const index=Math.max(0,Math.min(4,(e.clientX-rect.left-5)*5/(rect.width-10)-.5));
+    dock.style.setProperty('--dock-index',String(index));
+  });
+  const finish=e=>{
+    if(!gesture||gesture.id!==e.pointerId)return;
+    const dragged=gesture.dragging;gesture=null;dock.classList.remove('dragging');
+    if(!dragged){updateDock(state.screen);return}
+    suppressClickUntil=Date.now()+400;e.preventDefault();
+    if(e.type==='pointercancel'){updateDock(state.screen);return}
+    const buttons=Array.from(dock.querySelectorAll('button')),rect=dock.getBoundingClientRect();
+    const index=Math.max(0,Math.min(buttons.length-1,Math.floor((e.clientX-rect.left)*buttons.length/rect.width)));
+    const button=buttons[index];
+    if(button?.id==='dockMoreBtn'){dock.style.setProperty('--dock-index','4');toggleNavigation()}
+    else if(button?.dataset.nav==='rx')window.RxEMR?.directPrescription?.();
+    else if(button?.dataset.nav)navigate(button.dataset.nav);
+    else updateDock(state.screen);
+  };
+  dock.addEventListener('pointerup',finish);dock.addEventListener('pointercancel',finish);
 }
 function navigate(name){if(!state.vault)return;closeNavigation();state.screen=name;$$('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));$$('#primaryNav button[data-nav]').forEach(b=>b.classList.toggle('active',b.dataset.nav===name));updateDock(name);const titles={home:'Inicio',patients:'Pacientes',emr:'Expediente clínico',encounter:'Consulta',quicknote:'Nota clínica rápida',rx:'Nueva receta',history:'Recetas',settings:'Ajustes'};$('#topSubtitle').textContent=titles[name]||'';if(name==='patients')renderPatients();if(name==='history')renderHistory();if(name==='emr')window.RxEMR?.renderDashboard?.();if(name==='rx')renderRxPatientOptions();if(name==='settings'){renderSettings();refreshSessions()}window.scrollTo({top:0,behavior:'smooth'});}
 function renderAll(){const commercial=window.ClinovyraPolicy?.isCommercial?.()||false;$('#manualTemplateBtn')?.classList.toggle('hidden',commercial);$('#directRxHomeBtn')?.classList.toggle('hidden',commercial);renderCounts();renderPatients();renderRxPatientOptions();renderHistory();renderSettings();renderThemeGrid();renderLogoGrid();window.RxEMR?.renderDashboard?.();if(!$('#medicationList').children.length)addMedication();$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric||nativeBiometricUnsupported());}
@@ -617,7 +662,7 @@ async function importBackup(file){
   alert('Respaldo importado. La app se reiniciará; desbloquéala con el PIN del respaldo.');location.reload();
 }
 function bindEvents(){
-  $('#accessForm')?.addEventListener('submit',submitAccess);$('#menuBtn')?.addEventListener('click',toggleNavigation);$('#dockMoreBtn')?.addEventListener('click',toggleNavigation);$('#navBackdrop')?.addEventListener('click',closeNavigation);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNavigation()});
+  $('#accessForm')?.addEventListener('submit',submitAccess);$('#menuBtn')?.addEventListener('click',toggleNavigation);$('#dockMoreBtn')?.addEventListener('click',toggleNavigation);bindDockSwipe();$('#navBackdrop')?.addEventListener('click',closeNavigation);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNavigation()});
   $('#setupForm').addEventListener('submit',async e=>{e.preventDefault();const p=$('#setupPin').value,p2=$('#setupPin2').value;if(p.length<8)return toast('Usa al menos 8 caracteres.');if(p!==p2)return toast('Los PIN no coinciden.');try{await setupVault(p);$('#setupPin').value=$('#setupPin2').value='';await afterUnlock();toast('Bóveda creada')}catch(err){toast('No se pudo crear: '+err.message)}});
   $('#showRecoverySetupBtn')?.addEventListener('click',()=>$('#recoverySetup').classList.toggle('hidden'));$('#recoverySetup')?.addEventListener('submit',recoverCloudVault);
   $('#unlockForm').addEventListener('submit',async e=>{e.preventDefault();setStatus($('#unlockMsg'),'Desbloqueando…');try{await unlockWithPin($('#unlockPin').value);$('#unlockPin').value='';await afterUnlock();setStatus($('#unlockMsg'),'')}catch{setStatus($('#unlockMsg'),'PIN/contraseña incorrecta o bóveda dañada.')}});

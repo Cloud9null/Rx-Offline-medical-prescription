@@ -127,6 +127,32 @@ test('failed PDF capture reserves once and retry preserves the original folios',
   expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).toEqual(folios);
 });
 
+test('mobile dock follows a finger swipe and theme palettes are separated',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-swipe-123');await page.locator('#setupPin2').fill('synthetic-swipe-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#mobileDock #dockMoreBtn').click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await expect(page.locator('#themeGrid > .theme-section')).toHaveCount(2);
+  await expect(page.locator('#themeGrid > .theme-section').first()).toContainText('Temas claros');
+  await expect(page.locator('#themeGrid > .theme-section').nth(1)).toContainText('Temas nocturnos');
+  await page.locator('#themeGrid [data-theme="prismNight"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode','dark');
+  await page.locator('#themeGrid [data-theme="glacierPearl"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode','light');
+  await page.locator('#mobileDock [data-nav="home"]').click();
+  await page.evaluate(()=>{
+    const dock=document.querySelector('#mobileDock'),button=dock.querySelector('[data-nav="home"]'),r=dock.getBoundingClientRect();
+    const make=(type,x)=>new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:11,pointerType:'touch',isPrimary:true,clientX:x,clientY:r.top+r.height/2});
+    button.dispatchEvent(make('pointerdown',r.left+r.width*.1));
+    dock.dispatchEvent(make('pointermove',r.left+r.width*.3));
+    dock.dispatchEvent(make('pointerup',r.left+r.width*.3));
+  });
+  await expect(page.locator('#screen-patients')).toHaveClass(/active/);
+  await expect(page.locator('#mobileDock [data-nav="patients"]')).toHaveAttribute('aria-current','page');
+});
+
 test('privacy-first local assistant structures a note without network AI',async({page})=>{
   await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-test-789');await page.locator('#setupPin2').fill('synthetic-test-789');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();await page.locator('#patientName').fill('Paciente Sintético Asistente');await page.locator('#patientDob').fill('1985-04-02');await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();

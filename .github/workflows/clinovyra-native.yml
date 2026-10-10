@@ -70,4 +70,16 @@ jobs:
           node-version: '22'
       - run: npm ci --no-audit --no-fund
       - run: npm run ios:init
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived CODE_SIGNING_ALLOWED=NO build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO build
+      - name: Package unsigned iPhone IPA for local signing
+        run: |
+          mkdir -p ios-unsigned/Payload
+          cp -R ios-derived-device/Build/Products/Debug-iphoneos/App.app ios-unsigned/Payload/
+          (cd ios-unsigned && zip -qry ../Clinovyra-iPhone-unsigned.ipa Payload)
+          unzip -t Clinovyra-iPhone-unsigned.ipa | tail -1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Clinovyra-iPhone-unsigned-IPA
+          path: native/Clinovyra-iPhone-unsigned.ipa
+          if-no-files-found: error
