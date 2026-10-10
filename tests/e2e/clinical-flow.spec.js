@@ -23,6 +23,12 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');await page.locator('#patientAddress').fill('Domicilio sintético 123');
   await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
   await expect(page.locator('#patientList')).toContainText('Paciente Sintético Uno');
+  await page.locator('[data-record-patient]').first().click();
+  await expect(page.locator('#patientRecord')).toContainText('10 de febrero de 1990');
+  await expect(page.locator('#patientRecord')).toContainText('Información no confirmada');
+  await expect(page.locator('#screen-emr')).toHaveClass(/record-open/);
+  await page.locator('#closeRecord').click();
+  await expect(page.locator('#screen-patients')).toHaveClass(/active/);
 
   await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
   await page.locator('[data-note-field="reasonForVisit"]').fill('Tos y odinofagia');
@@ -43,6 +49,8 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 
   await page.locator('.bottom-nav [data-nav="emr"]').click();await page.locator('[data-open-record]').click();
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
+  await expect(page.locator('#patientRecord')).toContainText('Consultas recientes');
+  await expect(page.locator('#patientRecord')).toContainText('Tos y odinofagia');
   await expect(page.locator('.medication-summary')).toContainText('Paracetamol');
   await page.locator('[data-stop-med]').click();
   await expect(page.locator('.medication-summary')).toContainText('Suspendido');

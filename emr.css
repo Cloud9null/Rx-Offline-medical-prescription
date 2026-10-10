@@ -55,3 +55,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 @media(max-width:480px){.hero-panel{padding:25px 20px}.hero-panel h2{font-size:2rem}.hero-panel p{font-size:.85rem}.hero-actions{grid-template-columns:1fr}.hero-actions .btn:first-child{grid-column:auto}.home-task-grid{gap:9px}.home-task{grid-template-columns:1fr;gap:3px;min-height:115px;padding:13px}.home-task-icon{grid-row:auto;width:36px;height:36px;margin-bottom:3px}.home-task:last-child{grid-column:auto}#screen-home .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#screen-home .metric-card:last-child{grid-column:auto}#screen-home .metric-card{padding:14px}#screen-home .metric-card strong{font-size:1.45rem}}
 @media(prefers-reduced-motion:reduce){.home-task,#screen-home .metric-card{transition:none}.home-task:hover,.metric-card:hover{transform:none}}
 @media print{.home-task-grid,.home-section-heading{display:none!important}}
+
+/* V3.6.1 — the longitudinal record is the patient's focused view. */
+#screen-emr.record-open>.section-head,#screen-emr.record-open>.emr-dashboard-grid,#screen-emr.record-open>.toolbar,#screen-emr.record-open>#emrActivity{display:none}
+#screen-emr.record-open #patientRecord{display:grid;gap:14px}
+#patientRecord .record-head{margin:0;background:linear-gradient(120deg,color-mix(in srgb,var(--primary) 9%,var(--panel)),var(--panel));align-items:flex-start}
+#patientRecord .record-head h2{font-size:clamp(1.55rem,2.5vw,2.25rem);line-height:1.15}
+#patientRecord .record-head .row-actions{justify-content:flex-end;margin:0}
+.record-demographics h3,.record-recent h3{margin:0 0 14px;font-size:1.08rem}
+.record-demographics dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0}
+.record-demographics dl>div{min-width:0;padding:12px;border-radius:14px;background:var(--panel2);border:1px solid var(--line)}
+.record-demographics dt{font-size:.68rem;font-weight:850;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.record-demographics dd{font-size:.89rem;font-weight:720;margin:5px 0 0;overflow-wrap:anywhere;white-space:pre-wrap}
+.record-recent article{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.record-recent article strong,.record-recent article small{display:block}
+.record-recent article small{margin-top:5px;color:var(--muted);font-size:.75rem}
+.record-recent article .btn{min-height:44px;flex:0 0 auto}
+@media(max-width:900px){.record-demographics dl{grid-template-columns:repeat(2,minmax(0,1fr))}#patientRecord .record-head .row-actions{justify-content:flex-start}}
+@media(max-width:600px){.record-demographics dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.record-demographics dl>div:last-child,.record-demographics dl>div:nth-last-child(2){grid-column:1/-1}#patientRecord .record-head .row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}#patientRecord .record-head .row-actions .btn{white-space:normal;text-align:center;padding:8px;min-height:48px}.record-recent article{align-items:flex-start;flex-direction:column}.record-recent article .btn{width:100%}}

@@ -90,3 +90,19 @@ html[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel)}h
 .manual-batch-row>div{min-width:0}.manual-batch-row strong,.manual-batch-row small{display:block;overflow-wrap:anywhere}.manual-batch-row small{color:var(--muted);font-size:.72rem;margin-top:3px}
 @media(max-width:540px){.manual-batch-row{align-items:flex-start;flex-direction:column}.manual-batch-row button{align-self:flex-start}}
 
+
+/* V3.6.1 — patient-first workspace; prescription print rules are untouched. */
+.patient-list-card{align-items:flex-start;box-shadow:0 6px 24px color-mix(in srgb,var(--primary) 6%,transparent);transition:border-color .18s,transform .18s,box-shadow .18s}
+.patient-list-card:hover{border-color:color-mix(in srgb,var(--primary) 33%,var(--line));box-shadow:0 12px 30px color-mix(in srgb,var(--primary) 10%,transparent)}
+.patient-name-link{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:2px 0;border:0;background:transparent;color:var(--text);font-weight:850;text-align:left;cursor:pointer;font-size:1rem}
+.patient-name-link span{color:var(--primary);font-size:.8rem}
+.patient-list-card .list-main{padding-top:8px}
+.patient-list-card .list-main small{overflow-wrap:anywhere}
+.patient-list-card .list-actions{flex-wrap:wrap;justify-content:flex-end;max-width:470px}
+.patient-list-card .list-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 12px;border:1px solid var(--line);font-size:.76rem;font-weight:780;color:var(--text);white-space:nowrap}
+.patient-list-card .list-actions button:first-child{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 27%,var(--line));background:color-mix(in srgb,var(--primary) 7%,var(--panel))}
+.patient-list-card button:focus-visible{outline:3px solid var(--secondary);outline-offset:2px}
+@media(min-width:1100px){.bottom-nav{width:220px;left:22px;padding:14px}.content{width:min(calc(100% - 290px),1420px);margin-left:268px;margin-right:auto;padding:32px 30px 68px}.topbar{padding-left:26px;padding-right:28px}.section-head h2{font-size:2.25rem}.patient-list-card{padding:20px 22px}.patient-list-card .list-actions{max-width:none}.metric-grid{gap:16px}.hero-panel{border-radius:28px}}
+@media(max-width:1050px){.patient-list-card{flex-wrap:wrap}.patient-list-card .list-actions{width:100%;max-width:none;justify-content:flex-start;margin-left:60px}}
+@media(max-width:760px){.patient-list-card{gap:10px}.patient-list-card .list-main{flex-basis:calc(100% - 62px)}.patient-list-card .list-actions{margin-left:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.patient-list-card .list-actions button{white-space:normal;text-align:center;line-height:1.2}.patient-name-link{font-size:1.04rem}}
+@media(prefers-reduced-motion:reduce){.patient-list-card{transition:none}}

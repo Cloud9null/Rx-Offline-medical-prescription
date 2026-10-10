@@ -2,6 +2,8 @@ name: Clinovyra installable builds
 
 on:
   workflow_dispatch:
+  push:
+    branches: [feat/clinovyra-native-emr]
   pull_request:
     types: [labeled]
 
@@ -73,7 +75,7 @@ jobs:
           if-no-files-found: error
 
   windows:
-    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
     runs-on: windows-latest
     timeout-minutes: 35
     defaults:
@@ -93,7 +95,7 @@ jobs:
           if-no-files-found: error
 
   ios:
-    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
     runs-on: macos-latest
     timeout-minutes: 40
     defaults:
@@ -106,8 +108,8 @@ jobs:
           node-version: '22'
       - run: npm ci --no-audit --no-fund
       - run: npm run ios:init
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.0 CURRENT_PROJECT_VERSION=360 build
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.0 CURRENT_PROJECT_VERSION=360 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.1 CURRENT_PROJECT_VERSION=361 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.1 CURRENT_PROJECT_VERSION=361 build
       - name: Package unsigned iPhone IPA for AltStore/Sideloadly signing
         run: |
           mkdir -p ios-unsigned/Payload
