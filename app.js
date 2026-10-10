@@ -527,7 +527,7 @@ function openManualTemplate(){
   state.manualReprintBatchId=null;state.manualActiveBatchId=null;generateManualFolios(state.manualPrintCount);renderManualStyleGrid();renderManualPreview();renderManualBatchHistory();setManualPdfActions(false);$('#manualTemplateDialog').showModal();fitManualPreview();
 }
 function regenerateManualFolios(){state.manualReprintBatchId=null;state.manualActiveBatchId=null;generateManualFolios(state.manualPrintCount||2);renderManualPreview();setManualPdfActions(false);toast(`Se generaron ${state.manualPrintFolios.length} folios nuevos`)}
-function changeManualPrintCount(){const q=clampManualCount($('#manualPrintCount')?.value||2);state.manualPrintCount=q;state.manualReprintBatchId=null;state.manualActiveBatchId=null;generateManualFolios(q);renderManualPreview();setManualPdfActions(false)}
+function changeManualPrintCount(){const q=clampManualCount($('#manualPrintCount')?.value||2);if(q===state.manualPrintCount&&state.manualPrintFolios?.length===q)return;state.manualPrintCount=q;state.manualReprintBatchId=null;state.manualActiveBatchId=null;generateManualFolios(q);renderManualPreview();setManualPdfActions(false)}
 function clearManualPrintMode(){document.getElementById('manualPrintPageStyle')?.remove();$('#printArea').classList.remove('manual-print-area')}
 function setManualPdfActions(ready){$('#openManualPdfBtn')?.classList.toggle('hidden',!ready);$('#shareManualPdfBtn')?.classList.toggle('hidden',!ready);$('#manualPdfStatus').textContent=ready?'PDF listo. Ábrelo para imprimir o guardar en Archivos. iOS no informa si terminó la impresión.':'Primero prepara el PDF y reserva los folios en la bóveda.'}
 async function printManualTemplate(){
