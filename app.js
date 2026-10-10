@@ -2,7 +2,7 @@
 'use strict';
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const enc=new TextEncoder(), dec=new TextDecoder();
-const state={db:null,meta:null,vault:null,vaultKey:null,screen:'home',medSeq:0,profilePad:null,rxPad:null,lockTimer:null,accessCheckTimer:null,hiddenAt:null,pendingEmit:null,pendingReview:null,pendingBiometric:null,cloudSyncTimer:null,cloudSyncAttempts:0,cloudUser:null,cloudReady:false,accessGranted:false,accessRole:null,accessOwnerHash:null,accessSessionId:null,testAccess:false};
+const state={db:null,meta:null,vault:null,vaultKey:null,screen:'home',medSeq:0,profilePad:null,rxPad:null,lockTimer:null,accessCheckTimer:null,hiddenAt:null,pendingEmit:null,pendingReview:null,pendingBiometric:null,cloudSyncTimer:null,cloudSyncAttempts:0,cloudSyncState:'pending',cloudSyncError:'',cloudUser:null,cloudReady:false,accessGranted:false,accessRole:null,accessOwnerHash:null,accessSessionId:null,testAccess:false};
 let visibleRecoveryCode='';
 const themes=[
  {id:'midnightGold',name:'Midnight Gold',desc:'Azul noche + oro',primary:'#122f49',secondary:'#b7904b',accent:'#dfc27e',bg:'#f2f4f5',panel:'#ffffff',panel2:'#edf1f3',text:'#17212b',muted:'#697581',line:'#dbe2e6'},
@@ -273,12 +273,13 @@ async function initCloudState(){
 function updateCloudUI(message=''){
   const configured=!!window.RxCloud?.configured?.();
   const signed=!!state.cloudUser;
+  const cloudLabel=state.cloudSyncState==='synced'?'Nube al día':state.cloudSyncState==='error'?'Nube pendiente':'Sincronizando…';
   const status=$('#cloudStatus');
-  if(status)status.textContent=message||(configured?(signed?`Conectado como ${state.cloudUser.email||'usuario'} · nube + local`:'Supabase configurado · inicia sesión para activar la nube'):'Supabase no configurado · modo local disponible');
+  if(status)status.textContent=message||(configured?(signed?`Conectado como ${state.cloudUser.email||'usuario'} · ${cloudLabel}${state.cloudSyncError?` · ${state.cloudSyncError}`:''}`:'Supabase configurado · inicia sesión para activar la nube'):'Supabase no configurado · modo local disponible');
   $('#cloudLoginWrap')?.classList.toggle('hidden',signed);
   $('#cloudSignedWrap')?.classList.toggle('hidden',!signed);
   const badge=$('#offlineBadge');
-  if(badge)badge.textContent=!navigator.onLine?'● Offline':(signed?'● Nube + local':'● Local');
+  if(badge)badge.textContent=!navigator.onLine?'● Offline':(signed?`● ${cloudLabel}`:'● Local');
   const ownerStatus=$('#ownerAccessStatus'),navUser=$('#navUserLabel');
   if(ownerStatus)ownerStatus.textContent=signed?`${state.cloudUser.email||'Cuenta privada'} · ${state.accessRole==='owner'?'propietario':'autorizada'}`:'Autorización guardada en este dispositivo';
   if(navUser)navUser.textContent=signed?(state.cloudUser.email||'Cuenta autorizada'):'Dispositivo autorizado · offline';
@@ -305,10 +306,11 @@ async function signOutOtherSessions(){
   try{await window.RxCloud.signOutOthers();await refreshSessions();toast('Las demás sesiones fueron cerradas')}catch(err){setStatus($('#sessionStatus'),err.message||'No se pudieron cerrar las demás sesiones.')}
 }
 async function runCloudSync({quiet=false}={}){
-  if(!state.vault||!window.RxCloud?.configured?.())return;
+  if(!state.vault||!window.RxCloud?.configured?.())return false;
   try{
+    state.cloudSyncState='pending';state.cloudSyncError='';updateCloudUI();
     const u=await window.RxCloud.user();state.cloudUser=u;updateCloudUI();
-    if(!u){if(!quiet)toast('Inicia sesión en Supabase para sincronizar');return}
+    if(!u){if(!quiet)toast('Inicia sesión en Supabase para sincronizar');return false}
     await validateCloudAccess();
     scheduleAccessCheck();
     setStatus($('#cloudSyncStatus'),'Probando sincronización con Supabase…');
@@ -317,20 +319,27 @@ async function runCloudSync({quiet=false}={}){
     await syncVaultSecret();
     const syncResult=await window.RxCloud.syncVault(state.vault,canonicalPayload);
     for(const rec of state.vault.recipes||[]){if(rec?.seal?.publicToken)rec.seal.cloudRegistered=true}
-    state.cloudSyncAttempts=0;await saveVault();renderAll();updateCloudUI();
+    await saveVault();state.cloudSyncAttempts=0;
     const emrPending=syncResult?.emrResult?.migrationRequired;
+    state.cloudSyncState=emrPending?'error':'synced';state.cloudSyncError=emrPending?'EMR pendiente de migración':'';
+    renderAll();updateCloudUI();
     setStatus($('#cloudSyncStatus'),emrPending?`Recetas sincronizadas · EMR pendiente de migración en el entorno Supabase`:`Sincronización completada ${fmtDateTime(new Date().toISOString())}`,!emrPending);
     if(!quiet)toast('Sincronización completada');
+    return !emrPending;
   }catch(err){
     console.warn('Rx Cloud sync:',err);
     state.cloudSyncAttempts=Math.min(6,(state.cloudSyncAttempts||0)+1);
+    state.cloudSyncState='error';state.cloudSyncError=err.message||'no se pudo sincronizar';updateCloudUI();
     setStatus($('#cloudSyncStatus'),`Nube pendiente: ${err.message||'no se pudo sincronizar'}. La receta y la bóveda local siguen funcionando.`);
+    if(state.vault&&!state.vault.patients?.length)renderPatients($('#patientSearch')?.value||'');
     if(navigator.onLine&&state.cloudUser&&state.cloudSyncAttempts<6){clearTimeout(state.cloudSyncTimer);const delay=Math.min(60000,1200*(2**(state.cloudSyncAttempts-1)));state.cloudSyncTimer=setTimeout(()=>runCloudSync({quiet:true}),delay)}
     if(!quiet)toast('Sincronización pendiente; modo local activo');
+    return false;
   }
 }
 function queueCloudSync(){
   clearTimeout(state.cloudSyncTimer);
+  state.cloudSyncState='pending';state.cloudSyncError='';updateCloudUI();
   const el=$('#cloudSyncStatus');
   if(!state.cloudUser){if(el)setStatus(el,'Cambios guardados en la bóveda local.');return}
   if(!navigator.onLine){if(el)setStatus(el,'Cambios guardados localmente · se sincronizarán al recuperar internet.');return}
@@ -351,7 +360,7 @@ async function afterUnlock(){
   scheduleLock();
   await initCloudState();
   if(state.cloudUser){
-    try{await validateCloudAccess();scheduleAccessCheck();setStatus($('#cloudSyncStatus'),'Sesión de nube restaurada · sincronizando…');if(navigator.onLine)await runCloudSync({quiet:true})}
+    try{await validateCloudAccess();scheduleAccessCheck();setStatus($('#cloudSyncStatus'),'Sesión de nube restaurada · sincronizando…');if(navigator.onLine)await runCloudSync({quiet:true});else updateCloudUI()}
     catch(err){await window.RxCloud.signOut().catch(()=>{});state.cloudUser=null;updateCloudUI('Sesión de nube no autorizada; la bóveda local permanece protegida.');setStatus($('#cloudSyncStatus'),err.message)}
   }
 }
@@ -368,7 +377,7 @@ function navigate(name){if(!state.vault)return;closeNavigation();state.screen=na
 function renderAll(){const commercial=window.ClinovyraPolicy?.isCommercial?.()||false;$('#manualTemplateBtn')?.classList.toggle('hidden',commercial);$('#directRxHomeBtn')?.classList.toggle('hidden',commercial);renderCounts();renderPatients();renderRxPatientOptions();renderHistory();renderSettings();renderThemeGrid();renderLogoGrid();window.RxEMR?.renderDashboard?.();if(!$('#medicationList').children.length)addMedication();$('#biometricUnlockBtn').classList.toggle('hidden',!state.meta?.biometric||nativeBiometricUnsupported());}
 function renderCounts(){$('#patientCount').textContent=state.vault.patients.filter(p=>!p.archived).length;$('#recipeCount').textContent=state.vault.recipes.length;window.RxEMR?.renderDashboard?.()}
 function patientSubtitle(p){const age=ageYears(p.dob);const dobTxt=p.dob?displayDob(p.dob):'F.N. no disponible';const sx=sexCode(p.sex)||'—';return `${dobTxt} · ${age===null?'Edad no disponible':age+' años'} · ${sx}${p.allergies?' · Alergias: '+p.allergies:''}`}
-function renderPatients(filter=''){const arr=state.vault.patients.filter(p=>!p.archived&&(p.name.toLowerCase().includes(filter.toLowerCase()))).sort((a,b)=>a.name.localeCompare(b.name));const list=$('#patientList');if(!arr.length){list.innerHTML='<div class="empty-state">No hay pacientes que coincidan. Usa “Alta paciente” para comenzar.</div>';return;}list.innerHTML=arr.map(p=>`<article class="list-item"><div class="avatar">${esc(initials(p.name))}</div><div class="list-main"><strong>${esc(p.name)}</strong><small>${esc(patientSubtitle(p))}</small></div><div class="list-actions"><button type="button" data-record-patient="${p.id}" title="Abrir expediente">▤</button><button type="button" data-consult-patient="${p.id}" title="Nueva consulta">＋</button><button type="button" data-rx-patient="${p.id}" title="Receta directa">℞</button><button type="button" data-edit-patient="${p.id}" title="Editar">✎</button></div></article>`).join('');list.querySelectorAll('[data-edit-patient]').forEach(b=>b.addEventListener('click',()=>openPatientDialog(b.dataset.editPatient)));list.querySelectorAll('[data-record-patient]').forEach(b=>b.addEventListener('click',()=>window.RxEMR?.openPatientRecord?.(b.dataset.recordPatient)));list.querySelectorAll('[data-consult-patient]').forEach(b=>b.addEventListener('click',()=>window.RxEMR?.openStart?.(b.dataset.consultPatient)));list.querySelectorAll('[data-rx-patient]').forEach(b=>b.addEventListener('click',()=>{if(window.ClinovyraPolicy?.isCommercial?.())return window.RxEMR?.openStart?.(b.dataset.rxPatient);window.RxEMR?.directPrescription?.();$('#rxPatient').value=b.dataset.rxPatient;updateSelectedPatient();}));}
+function renderPatients(filter=''){const arr=state.vault.patients.filter(p=>!p.archived&&(p.name.toLowerCase().includes(filter.toLowerCase()))).sort((a,b)=>a.name.localeCompare(b.name));const list=$('#patientList');if(!arr.length){const cloudEmpty=!filter&&!state.vault.patients.length&&state.cloudUser;list.innerHTML=cloudEmpty?`<div class="empty-state"><p>${state.cloudSyncState==='synced'?'No hay pacientes en esta cuenta.':'No hay pacientes en este dispositivo. La nube aún no confirmó la sincronización.'}</p><button type="button" class="btn ghost" id="retryPatientsSync">Sincronizar pacientes</button></div>`:'<div class="empty-state">No hay pacientes que coincidan. Usa “Alta paciente” para comenzar.</div>';list.querySelector('#retryPatientsSync')?.addEventListener('click',()=>runCloudSync({quiet:false}));return;}list.innerHTML=arr.map(p=>`<article class="list-item"><div class="avatar">${esc(initials(p.name))}</div><div class="list-main"><strong>${esc(p.name)}</strong><small>${esc(patientSubtitle(p))}</small></div><div class="list-actions"><button type="button" data-record-patient="${p.id}" title="Abrir expediente">▤</button><button type="button" data-consult-patient="${p.id}" title="Nueva consulta">＋</button><button type="button" data-rx-patient="${p.id}" title="Receta directa">℞</button><button type="button" data-edit-patient="${p.id}" title="Editar">✎</button></div></article>`).join('');list.querySelectorAll('[data-edit-patient]').forEach(b=>b.addEventListener('click',()=>openPatientDialog(b.dataset.editPatient)));list.querySelectorAll('[data-record-patient]').forEach(b=>b.addEventListener('click',()=>window.RxEMR?.openPatientRecord?.(b.dataset.recordPatient)));list.querySelectorAll('[data-consult-patient]').forEach(b=>b.addEventListener('click',()=>window.RxEMR?.openStart?.(b.dataset.consultPatient)));list.querySelectorAll('[data-rx-patient]').forEach(b=>b.addEventListener('click',()=>{if(window.ClinovyraPolicy?.isCommercial?.())return window.RxEMR?.openStart?.(b.dataset.rxPatient);window.RxEMR?.directPrescription?.();$('#rxPatient').value=b.dataset.rxPatient;updateSelectedPatient();}));}
 function openPatientDialog(id=null){const p=id?state.vault.patients.find(x=>x.id===id):null;$('#patientDialogTitle').textContent=p?'Editar paciente':'Alta paciente';$('#patientId').value=p?.id||'';$('#patientName').value=p?.name||'';$('#patientDob').value=p?.dob||'';$('#patientSex').value=sexCode(p?.sex)||'';$('#patientAllergies').value=p?.allergies||'';$('#patientAddress').value=p?.address||'';$('#patientPhone').value=p?.phone||'';$('#patientWeight').value=p?.weight||'';$('#patientNotes').value=p?.notes||'';updatePatientWeightField();$('#patientDialog').showModal();}
 function updatePatientWeightField(){const age=ageYears($('#patientDob').value);const hint=$('#patientAgeHint');if(hint)hint.textContent=`Edad calculada automáticamente: ${age===null?'—':age+' años'}`;$('#patientWeightWrap').classList.toggle('hidden',!(age!==null&&age<18))}
 async function savePatientFromForm(e){e.preventDefault();const id=$('#patientId').value||crypto.randomUUID(),existing=state.vault.patients.find(x=>x.id===id),age=ageYears($('#patientDob').value);const p={id,name:$('#patientName').value.trim(),dob:$('#patientDob').value,sex:sexCode($('#patientSex').value)||'',allergies:$('#patientAllergies').value.trim(),address:$('#patientAddress').value.trim(),phone:$('#patientPhone').value.trim(),weight:(age!==null&&age<18)?($('#patientWeight').value||''): '',notes:$('#patientNotes').value.trim(),clinical:existing?.clinical||{},archived:false,createdAt:existing?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(!p.name||!p.dob)return toast('Nombre y fecha de nacimiento son obligatorios.');if(existing)Object.assign(existing,p);else state.vault.patients.push(p);await saveVault();$('#patientDialog').close();renderAll();queueCloudSync();toast('Paciente guardado');}
@@ -561,11 +570,11 @@ function bindEvents(){
   $('#testBiometricBtn')?.addEventListener('click',async()=>{setStatus($('#bioStatus'),'Probando acceso a la bóveda…');$('#testBiometricBtn').disabled=true;try{await unlockBiometric();setStatus($('#bioStatus'),'Prueba correcta: la credencial abrió esta bóveda.',true);toast('Desbloqueo biométrico verificado')}catch(err){setStatus($('#bioStatus'),biometricError(err))}finally{$('#testBiometricBtn').disabled=false}});$('#disableBiometricBtn')?.addEventListener('click',()=>disableBiometric().catch(err=>setStatus($('#bioStatus'),biometricError(err))));$('#lockNowBtn')?.addEventListener('click',lock);
   $('#enableRecoveryBtn')?.addEventListener('click',async()=>{setStatus($('#recoveryStatus'),'Creando paquete de recuperación E2EE…');try{await enableCloudRecovery();setStatus($('#recoveryStatus'),'Recuperación cifrada activa.',true)}catch(err){setStatus($('#recoveryStatus'),err.message)}});$('#recoverySavedCheck')?.addEventListener('change',e=>{$('#closeRecoveryCodeBtn').disabled=!e.target.checked});$('#closeRecoveryCodeBtn')?.addEventListener('click',()=>{visibleRecoveryCode='';$('#recoveryCodeValue').textContent='';$('#recoveryCodeDialog').close()});$('#copyRecoveryCodeBtn')?.addEventListener('click',async()=>{if(!visibleRecoveryCode)return;try{await copyText(visibleRecoveryCode);toast('Código copiado; guárdalo en un lugar seguro')}catch(err){toast(err.message)}});$('#downloadRecoveryCodeBtn')?.addEventListener('click',()=>{if(!visibleRecoveryCode)return;const blob=new Blob([`RX OFFLINE EMR — CÓDIGO DE RECUPERACIÓN\n\n${visibleRecoveryCode}\n\nGuárdalo fuera de línea. No lo envíes por chat ni correo.\n`],{type:'text/plain'}),a=document.createElement('a'),url=URL.createObjectURL(blob);a.href=url;a.download='rx-offline-codigo-recuperacion.txt';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
   $('#exportBackupBtn').addEventListener('click',()=>exportBackup().catch(err=>toast(err.message)));$('#importBackupInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{await importBackup(f)}catch(err){toast(err.message)}finally{e.target.value=''}});
-  $('#cloudLoginBtn')?.addEventListener('click',async()=>{const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;if(!email||!password)return setStatus($('#cloudSyncStatus'),'Escribe correo y contraseña.');try{setStatus($('#cloudSyncStatus'),'Iniciando sesión…');await window.RxCloud.signIn(email,password);await validateCloudAccess();$('#cloudPassword').value='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Cuenta autorizada · sincronizando…',true);await runCloudSync({quiet:true});toast('Nube conectada y sincronizada')}catch(err){await window.RxCloud?.signOut?.().catch(()=>{});state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),err.message||'No se pudo iniciar sesión')}});
-  $('#cloudLogoutBtn')?.addEventListener('click',async()=>{try{await window.RxCloud.signOut();state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),'Sesión de nube cerrada.');toast('Supabase desconectado en este dispositivo')}catch(err){setStatus($('#cloudSyncStatus'),err.message)}});
+  $('#cloudLoginBtn')?.addEventListener('click',async()=>{const email=$('#cloudEmail').value.trim(),password=$('#cloudPassword').value;if(!email||!password)return setStatus($('#cloudSyncStatus'),'Escribe correo y contraseña.');try{setStatus($('#cloudSyncStatus'),'Iniciando sesión…');await window.RxCloud.signIn(email,password);await validateCloudAccess();$('#cloudPassword').value='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Cuenta autorizada · sincronizando…',true);const synced=await runCloudSync({quiet:true});toast(synced?'Nube conectada y sincronizada':'Cuenta conectada · sincronización pendiente')}catch(err){await window.RxCloud?.signOut?.().catch(()=>{});state.cloudUser=null;updateCloudUI();setStatus($('#cloudSyncStatus'),err.message||'No se pudo iniciar sesión')}});
+  $('#cloudLogoutBtn')?.addEventListener('click',async()=>{try{await window.RxCloud.signOut();state.cloudUser=null;state.cloudSyncState='pending';state.cloudSyncError='';updateCloudUI();setStatus($('#cloudSyncStatus'),'Sesión de nube cerrada.');toast('Supabase desconectado en este dispositivo')}catch(err){setStatus($('#cloudSyncStatus'),err.message)}});
   $('#cloudSyncBtn')?.addEventListener('click',()=>runCloudSync({quiet:false}));
   $('#refreshSessionsBtn')?.addEventListener('click',refreshSessions);$('#signOutOthersBtn')?.addEventListener('click',signOutOtherSessions);$('#deauthorizeDeviceBtn')?.addEventListener('click',async()=>{if(!confirm('¿Desautorizar este dispositivo? Necesitarás la cuenta Supabase y el PIN para volver a entrar. Tus datos cifrados locales no se borrarán.'))return;await deauthorizeCurrentDevice('Este dispositivo fue desautorizado correctamente. Los datos cifrados locales se conservaron.')});
-  window.addEventListener('rx-cloud-auth',e=>{state.cloudUser=e.detail?.user||null;updateCloudUI()});
+  window.addEventListener('rx-cloud-auth',e=>{const next=e.detail?.user||null;if(next?.id!==state.cloudUser?.id){state.cloudSyncState='pending';state.cloudSyncError=''}state.cloudUser=next;updateCloudUI()});
   ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{if(state.vault)scheduleLock()},{passive:true}));document.addEventListener('visibilitychange',()=>{if(document.hidden)state.hiddenAt=Date.now();else if(state.vault&&state.hiddenAt){const min=Number(state.vault.settings.lockTimeout||0);if(min>0&&Date.now()-state.hiddenAt>min*60000)lock();else scheduleLock();state.hiddenAt=null;}});
 }
 function initPlatformUi(){const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent),standalone=window.matchMedia?.('(display-mode: standalone)')?.matches||navigator.standalone===true,native=window.ClinovyraRuntime?.nativeOrigin();document.documentElement.classList.toggle('ios-device',ios);document.documentElement.classList.toggle('ios-pwa',ios&&(standalone||native));document.documentElement.classList.toggle('native-shell',!!native)}

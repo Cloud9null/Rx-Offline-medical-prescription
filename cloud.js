@@ -90,21 +90,22 @@ async function syncEmr(vault){
   catch(err){setEmrQueue(vault,'error',err.message||String(err));if(err.status===404||/emr_sync_bundle|function.*not found|PGRST202/i.test(err.message||''))return {available:false,migrationRequired:true};throw err}
 }
 function isEmptyLocalVault(vault){return !(vault.profile?.name||vault.profile?.license)&&(vault.patients||[]).length===0&&(vault.recipes||[]).length===0}
-async function bootstrapRemoteVault(vault){
+async function bootstrapRemoteVault(vault,{mergeProfile=true}={}){
   const token=await accessToken();if(!token)throw new Error('Authentication required');
   const headers=apiHeaders(token),[profiles,patients,recipes]=await Promise.all([
     request(base()+'/rest/v1/profiles?select=profile,updated_at&limit=1',{headers}),
     request(base()+'/rest/v1/patients?select=payload,updated_at&order=updated_at.desc',{headers}),
     request(base()+'/rest/v1/prescriptions?select=payload,updated_at&order=updated_at.desc',{headers})
   ]);
-  mergeBundle(vault,{profile:profiles?.[0]?.profile||null,patients:(patients||[]).map(x=>x.payload),recipes:(recipes||[]).map(x=>x.payload)});
+  mergeBundle(vault,{profile:mergeProfile?(profiles?.[0]?.profile||null):null,patients:(patients||[]).map(x=>x.payload),recipes:(recipes||[]).map(x=>x.payload)});
 }
 async function healthcheck(){const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');const data=await rpc('rx_cloud_healthcheck',{},true);if(!data?.ok)throw new Error('El backend respondió, pero la sesión no quedó autenticada.');return data}
 async function syncVault(vault,canonicalFactory){
   if(!navigator.onLine)throw new Error('Sin conexión. Los cambios permanecen en la bóveda local.');
   const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');
   try{await healthcheck()}catch(err){throw new Error(`Backend Supabase: ${err.message}. Si ves “function not found”, ejecuta FINAL_REPAIR_AND_SYNC_V2_3_4.sql en SQL Editor.`)}
-  if(isEmptyLocalVault(vault)){try{await bootstrapRemoteVault(vault)}catch(err){throw new Error(`Protección de restauración: no se pudo leer la nube antes de escribir (${err.message}). No se envió una bóveda vacía.`)}}
+  // Even if the physician filled in a new profile, recover remote clinical records before the first write.
+  if(!(vault.patients||[]).length&&!(vault.recipes||[]).length){try{await bootstrapRemoteVault(vault,{mergeProfile:isEmptyLocalVault(vault)})}catch(err){throw new Error(`Protección de restauración: no se pudo leer la nube antes de escribir (${err.message}). No se envió una bóveda vacía.`)}}
   const recipes=(vault.recipes||[]).filter(r=>r?.seal?.publicToken).map(rec=>({rec,canonical_text:JSON.stringify(canonicalFactory(rec))}));
   const params={
     p_profile:stripProfile(vault),
@@ -128,3 +129,4 @@ async function revokeSession(sessionId){if(!sessionId)throw new Error('Sesión i
 async function signOutOthers(){return signOut('others')}
 window.RxCloud={configured,init,signIn,signOut,signOutOthers,user,authorizeUser,currentSessionId,listSessions,revokeSession,accessToken,healthcheck,syncVault,syncRecipe,syncEmr,saveRecoveryEnvelope,loadRecoveryEnvelope,uploadVaultSecret,downloadVaultSecret,syncDocumentUploads,syncDocumentDownloads,config:()=>({url:cfg.url||'',configured:configured()})};
 })();
+
