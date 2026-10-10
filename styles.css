@@ -71,6 +71,12 @@ html[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel)}h
 .manual-batch-history{margin:0 0 18px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
 .manual-batch-history .section-head{margin:0 0 8px}.manual-batch-history .section-head small{display:block;color:var(--muted);font-size:.73rem;margin-top:4px}
 .manual-batch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.manual-batch-actions{display:flex;gap:8px;flex-wrap:wrap}.manual-batch-actions .btn{min-height:44px}.manual-pdf-actions{flex-wrap:wrap}.manual-pdf-actions .hidden{display:none!important}#manualPdfStatus{padding:8px 12px;background:var(--panel2);border-radius:12px;border:1px solid var(--line)}
+.manual-folio-chip strong{max-width:1.45in;overflow-wrap:anywhere;line-height:1.05;font-size:4.6pt}
+[data-theme-mode="dark"] .btn.primary{color:#071823;background:var(--primary)}[data-theme-mode="dark"] .btn.secondary{color:var(--text);border-color:var(--line)}[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel2)}[data-theme-mode="dark"] .mobile-dock{box-shadow:0 18px 48px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.12)}
+@media(max-width:899px){.mobile-dock{bottom:max(10px,env(safe-area-inset-bottom));background:color-mix(in srgb,var(--panel) 90%,transparent)}.dock-indicator{background:color-mix(in srgb,var(--primary) 17%,var(--panel));border-color:color-mix(in srgb,var(--primary) 38%,var(--line))}.mobile-dock button{min-height:58px}.manual-template-modal-card{max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 16px);padding-bottom:calc(20px + env(safe-area-inset-bottom))}.manual-pdf-actions .btn{flex:1 1 140px;min-height:48px}}
+@media(prefers-contrast:more){.mobile-dock,.dock-indicator,.btn{border-width:2px!important}.mobile-dock button.active{font-weight:900}.manual-batch-row small{color:var(--text)}}
+@media(prefers-reduced-transparency:reduce){.mobile-dock,.dock-indicator{background:var(--panel);-webkit-backdrop-filter:none;backdrop-filter:none}}
 .manual-batch-row>div{min-width:0}.manual-batch-row strong,.manual-batch-row small{display:block;overflow-wrap:anywhere}.manual-batch-row small{color:var(--muted);font-size:.72rem;margin-top:3px}
 @media(max-width:540px){.manual-batch-row{align-items:flex-start;flex-direction:column}.manual-batch-row button{align-self:flex-start}}
 

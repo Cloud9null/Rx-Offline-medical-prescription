@@ -1,0 +1,21 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const context={window:{},Blob,TextEncoder};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('qr.js','utf8'),context);
+vm.runInContext(fs.readFileSync('manual-pdf.js','utf8'),context);
+test('manual PDF is a real two-up letter PDF with stable original folios and QR',async()=>{
+  const folios=['RM-01234567-89ABCDEF-01234567-89ABCDEF','RM-01234567-89ABCDEF-01234567-89ABCDE0','RM-01234567-89ABCDEF-01234567-89ABCDE1'];
+  const blob=context.window.ClinovyraManualPDF.build({folios,profile:{name:'Medico Sintetico',license:'TEST-000'},theme:{primary:'#154269',secondary:'#246a70'}});
+  assert.equal(blob.type,'application/pdf');
+  const bytes=Buffer.from(await blob.arrayBuffer()),source=bytes.toString('latin1');
+  assert.match(source,/^%PDF-1\.4/);
+  assert.equal((source.match(/\/Type \/Page \/Parent/g)||[]).length,2);
+  for(const f of folios)assert.ok(source.includes(f),'PDF retains original folio '+f);
+  assert.ok(source.includes('Verificar cedula'));
+  assert.ok(bytes.length>10000);
+  const again=Buffer.from(await context.window.ClinovyraManualPDF.build({folios,profile:{name:'Medico Sintetico',license:'TEST-000'},theme:{primary:'#154269',secondary:'#246a70'}}).arrayBuffer());
+  assert.deepEqual(again,bytes);
+});
