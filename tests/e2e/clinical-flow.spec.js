@@ -57,16 +57,19 @@ test('direct prescription remains available without creating an encounter',async
 });
 
 test('manual prescription batches print two per letter sheet and can reuse original folios',async({page})=>{
-  await page.addInitScript(()=>{window.__printCalls=0;window.print=()=>{window.__printCalls++}});
+  await page.addInitScript(()=>{window.__printCalls=0;window.__printUserActivated=false;window.print=()=>{window.__printCalls++;window.__printUserActivated=navigator.userActivation.isActive}});
   await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-manual-123');await page.locator('#setupPin2').fill('synthetic-manual-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('#manualTemplateBtn').click();await expect(page.locator('#manualTemplateDialog')).toBeVisible();
   await page.locator('#manualPrintCount').fill('3');await page.locator('#manualPrintCount').dispatchEvent('change');
   await expect(page.locator('#manualTemplatePreview .manual-letter-page')).toHaveCount(2);
   await page.locator('#printManualTemplateBtn').click();await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(1);
+  expect(await page.evaluate(()=>window.__printUserActivated)).toBe(true);
   const originals=await page.locator('#printArea .manual-folio-chip strong').allTextContents();
   expect(originals).toHaveLength(3);expect(new Set(originals).size).toBe(3);
   await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  await expect(page.locator('#manualBatchHistory')).toContainText('impresión no confirmada');
+  await page.locator('#manualTemplateBtn').click();
   await page.locator('#regenerateManualFoliosBtn').click();
   expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).not.toEqual(originals);
   await page.locator('#manualBatchHistory [data-reprint-batch]').first().click();
@@ -74,7 +77,23 @@ test('manual prescription batches print two per letter sheet and can reuse origi
   await page.locator('#printManualTemplateBtn').click();await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(2);
   expect(await page.locator('#printArea .manual-folio-chip strong').allTextContents()).toEqual(originals);
   await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(2);
-  await expect(page.locator('#manualBatchHistory')).toContainText('Reimpresión solicitada');
+  await expect(page.locator('#manualBatchHistory')).toContainText('Reimpresión preparada');
+});
+
+test('iPhone-sized manual preview fits the dialog and failed print does not register a batch',async({page})=>{
+  await page.addInitScript(()=>{window.print=()=>{throw new Error('synthetic printer unavailable')}});
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-print-123');await page.locator('#setupPin2').fill('synthetic-print-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#manualTemplateBtn').click();
+  const fit=await page.locator('#manualTemplatePreview').evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scale:parseFloat(getComputedStyle(el).getPropertyValue('--manual-preview-scale'))}));
+  expect(fit.scrollWidth).toBeLessThanOrEqual(fit.clientWidth+1);
+  expect(fit.scale).toBeLessThan(.5);
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#toast')).toContainText('No se abrió la impresión');
+  await page.locator('#manualTemplateBtn').click();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(0);
 });
 
 test('privacy-first local assistant structures a note without network AI',async({page})=>{
