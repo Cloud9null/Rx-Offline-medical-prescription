@@ -107,6 +107,23 @@ test('iPhone-sized preview fits and a blocked PDF window triggers download witho
   await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
 });
 
+test('failed PDF capture reserves once and retry preserves the original folios',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-retry-123');await page.locator('#setupPin2').fill('synthetic-retry-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#manualTemplateBtn').click();
+  const folios=await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents();
+  await page.evaluate(()=>{const original=window.ClinovyraManualPDF.build;let first=true;window.ClinovyraManualPDF={...window.ClinovyraManualPDF,build:(options)=>{if(first){first=false;return Promise.reject(new Error('Fallo sintético de captura'))}return original(options)}}});
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#manualPdfStatus')).toContainText('Fallo sintético de captura');
+  await expect(page.locator('#openManualPdfBtn')).toBeHidden();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#openManualPdfBtn')).toBeVisible();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).toEqual(folios);
+});
+
 test('privacy-first local assistant structures a note without network AI',async({page})=>{
   await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-test-789');await page.locator('#setupPin2').fill('synthetic-test-789');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();await page.locator('#patientName').fill('Paciente Sintético Asistente');await page.locator('#patientDob').fill('1985-04-02');await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
