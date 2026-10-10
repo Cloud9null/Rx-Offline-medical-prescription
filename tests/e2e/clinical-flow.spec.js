@@ -331,7 +331,7 @@ test('direct prescription is searchable in the patient record and can seed a lat
   await expect(page.locator('.linked-rx-banner')).toContainText(rxId);
 
   await page.locator('#primaryNav [data-nav="patients"]').click();
-  await page.locator('[data-record-patient]').click();
+  await page.locator('[data-record-patient]').first().click();
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
   await expect(page.locator(`[data-link-recipe="${rxId}"]`)).toHaveCount(0);
 });
