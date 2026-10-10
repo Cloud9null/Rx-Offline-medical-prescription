@@ -130,7 +130,9 @@ test('backup import verifies its PIN before replacing the local vault',async({pa
   await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('#primaryNav [data-nav="settings"]').click();
   await page.locator('#profileName').fill('Perfil del respaldo');
+  await page.locator('#profileLicense').fill('TEST-BACKUP-001');
   await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  await expect(page.locator('#toast')).toContainText('Perfil médico guardado');
   const downloadPromise=page.waitForEvent('download');
   await page.locator('#exportBackupBtn').click();
   const download=await downloadPromise;
