@@ -6,19 +6,20 @@
   <meta name="theme-color" content="#0f2942">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Rx Offline">
+  <meta name="apple-mobile-web-app-title" content="Clinovyra">
   <meta name="description" content="Expediente clínico y prescripción médica local-first y cifrada">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/clinovyra.png">
+  <link rel="icon" href="icons/clinovyra.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="emr.css">
-  <title>Rx Offline</title>
+  <title>Clinovyra · EMR</title>
 </head>
 <body>
   <div id="app" class="app-shell" aria-live="polite">
     <section id="accessView" class="auth-view hidden">
       <div class="auth-card access-card premium-card">
-        <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline EMR</h1><p>Expediente privado del propietario</p></div></div>
+        <div class="brand-lockup"><img class="brand-symbol" src="icons/clinovyra.png" alt="" width="56" height="56"><div><h1>Clinovyra</h1><p>EMR · Prescripción privada</p></div></div>
         <div class="access-kicker"><span>●</span> ACCESO RESTRINGIDO</div>
         <h2>Identifica tu cuenta</h2>
         <p class="muted">El enlace público no concede acceso. Solo una cuenta incluida en la lista privada de Supabase puede autorizar este dispositivo.</p>
@@ -35,7 +36,7 @@
 
     <section id="setupView" class="auth-view hidden">
       <div class="auth-card premium-card">
-        <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline</h1><p>Prescripción privada · local-first</p></div></div>
+        <div class="brand-lockup"><img class="brand-symbol" src="icons/clinovyra.png" alt="" width="56" height="56"><div><h1>Clinovyra</h1><p>Prescripción privada · local-first</p></div></div>
         <h2>Configura tu bóveda local</h2>
         <p class="muted">Los pacientes y recetas se cifran en este dispositivo. Crea un PIN de al menos 8 dígitos o una contraseña más larga.</p>
         <form id="setupForm" class="stack">
@@ -61,7 +62,7 @@
 
     <section id="unlockView" class="auth-view hidden">
       <div class="auth-card premium-card">
-        <div class="brand-lockup"><div class="brand-mark">Rx</div><div><h1>Rx Offline</h1><p>Bóveda bloqueada</p></div></div>
+        <div class="brand-lockup"><img class="brand-symbol" src="icons/clinovyra.png" alt="" width="56" height="56"><div><h1>Clinovyra</h1><p>Bóveda bloqueada</p></div></div>
         <form id="unlockForm" class="stack">
           <label>PIN o contraseña<input id="unlockPin" type="password" autocomplete="current-password" required></label>
           <button class="btn primary" type="submit">Desbloquear</button>
@@ -73,31 +74,32 @@
 
     <section id="mainView" class="hidden">
       <header class="topbar">
-        <div class="brand-lockup compact"><div class="brand-mark small">Rx</div><div><strong>Rx Offline</strong><span id="topSubtitle">Inicio</span></div></div>
+        <div class="brand-lockup compact"><img class="brand-symbol small" src="icons/clinovyra.png" alt="" width="40" height="40"><div><strong>Clinovyra</strong><span id="topSubtitle">Inicio</span></div></div>
         <div class="top-actions"><span id="offlineBadge" class="status-pill">● Local</span><button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Abrir navegación" aria-controls="primaryNav" aria-expanded="false">☰</button><button id="lockBtn" class="icon-btn" type="button" aria-label="Bloquear bóveda">⌁</button></div>
       </header>
 
       <main class="content">
         <section id="screen-home" class="screen active">
           <div class="hero-panel">
-            <div><span class="eyebrow">EXPEDIENTE + PRESCRIPCIÓN LOCAL-FIRST</span><h2>Atención clínica completa, privada y eficiente.</h2><p>Documenta la consulta o emite una receta directa. La bóveda local cifrada sigue siendo la fuente primaria del dispositivo.</p></div>
-            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota IA rápida</button></div>
+            <div class="hero-copy"><span class="eyebrow">CLINOVYRA · CONSULTORIO PERSONAL</span><h2>Tu jornada clínica, en orden.</h2><p>Abre una consulta, consulta el expediente o prepara una receta. Tus borradores y el talonario manual siguen disponibles sin conexión en este dispositivo.</p><div class="hero-private"><span aria-hidden="true">◈</span> Bóveda cifrada en este dispositivo</div></div>
+            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota rápida</button></div>
           </div>
+          <div class="home-section-heading"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h3>Continúa tu trabajo</h3></div><span>Un acceso por tarea</span></div>
+          <div class="home-task-grid" aria-label="Accesos clínicos"><button type="button" data-nav="patients" class="home-task"><span class="home-task-icon" aria-hidden="true">♙</span><strong>Pacientes</strong><small>Buscar o dar de alta</small></button><button type="button" data-nav="emr" class="home-task"><span class="home-task-icon" aria-hidden="true">▤</span><strong>Expedientes</strong><small>Notas y consultas</small></button><button type="button" data-nav="history" class="home-task"><span class="home-task-icon" aria-hidden="true">◷</span><strong>Recetas emitidas</strong><small>Historial e impresión</small></button></div>
           <div class="metric-grid">
             <button class="metric-card" data-nav="patients" type="button"><span>Pacientes</span><strong id="patientCount">0</strong><small>Alta y búsqueda local</small></button>
             <button class="metric-card" data-nav="emr" type="button"><span>Consultas</span><strong id="encounterCount">0</strong><small id="draftCount">0 borradores</small></button>
             <button class="metric-card" data-nav="history" type="button"><span>Recetas</span><strong id="recipeCount">0</strong><small>Emitidas e inmutables</small></button>
             <button class="metric-card" data-nav="settings" type="button"><span>Seguridad</span><strong>Local</strong><small>AES-GCM + firma ECDSA</small></button>
           </div>
-          <div class="premium-card notice"><strong>Local-first + nube</strong><p>La bóveda sigue funcionando offline. Cuando conectes Supabase, pacientes y recetas se sincronizan entre tus dispositivos sin perder la copia local.</p></div>
           <div class="premium-card manual-template-card">
-            <div class="card-title"><span>✎</span><h3>Receta manual de contingencia</h3></div>
-            <p class="muted">Genera una hoja tamaño carta con <strong>2 recetas media carta</strong> listas para llenar y firmar a mano. Incluye tu membrete y únicamente el QR de verificación de cédula profesional.</p>
-            <button id="manualTemplateBtn" class="btn secondary full" type="button">Imprimir recetas manuales por lote</button>
+            <div><span class="eyebrow">DISPONIBLE SIN CONEXIÓN</span><h3>Recetas manuales</h3><p class="muted">Imprime <strong>dos recetas media carta por hoja</strong>, con tu membrete y QR de cédula, para llenar y firmar a mano cuando lo necesites.</p></div>
+            <button id="manualTemplateBtn" class="btn secondary" type="button">Preparar talonario imprimible</button>
           </div>
         </section>
 
         <section id="screen-emr" class="screen">
+          <div id="patientRecord" class="hidden"></div>
           <div class="section-head"><div><span class="eyebrow">EXPEDIENTE CLÍNICO</span><h2>Actividad clínica</h2></div><button id="newEncounterBtn" class="btn primary" type="button">＋ Nueva consulta</button></div>
           <div class="emr-dashboard-grid">
             <div class="premium-card emr-stat"><small>Borradores</small><strong id="emrDraftMetric">0</strong><span>Guardado automático local</span></div>
@@ -106,7 +108,6 @@
           </div>
           <div class="toolbar"><input id="emrSearch" class="search" placeholder="Buscar paciente, folio o motivo…"></div>
           <div id="emrActivity" class="timeline-list"></div>
-          <div id="patientRecord" class="hidden"></div>
         </section>
 
         <section id="screen-encounter" class="screen">
@@ -192,7 +193,8 @@
             <form id="profileForm" class="stack">
               <div class="form-grid two"><label>Nombre completo<input id="profileName" required></label><label>Profesión / especialidad<input id="profileRole" value="Medicina General"></label></div>
               <div class="form-grid two"><label>Cédula profesional<input id="profileLicense" required></label><label>Institución / universidad<input id="profileUniversity"></label></div>
-              <label>Domicilio profesional<textarea id="profileAddress" rows="2"></textarea></label>
+              <div class="form-grid two"><label>Tipo de establecimiento<input id="profileFacilityType" placeholder="Consultorio de medicina general"></label><label>Nombre del establecimiento<input id="profileFacilityName" placeholder="Nombre registrado de tu consultorio"></label></div>
+              <label>Domicilio del establecimiento<textarea id="profileAddress" rows="2"></textarea></label>
               <div class="form-grid two"><label>Teléfono opcional<input id="profilePhone"></label><label>Correo opcional<input id="profileEmail" type="email"></label></div>
               <button class="btn primary" type="submit">Guardar perfil</button>
             </form>
@@ -254,7 +256,7 @@
               <div class="row-actions wrap"><button class="btn primary" type="submit">Actualizar protección</button><button id="cancelChangePinBtn" class="btn ghost" type="button">Cancelar</button></div>
               <div id="changePinStatus" class="inline-status" role="status"></div>
             </form>
-            <div class="settings-line"><div><strong>Face ID / Touch ID / Windows Hello</strong><small>Credencial WebAuthn del dispositivo; en Safari puede solicitar dos confirmaciones separadas para completar el cifrado.</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
+            <div class="settings-line"><div><strong>Biometría del dispositivo</strong><small>Face ID, Touch ID o huella en la app móvil; passkey en la web. El PIN local siempre queda disponible.</small></div><button id="enableBiometricBtn" class="btn secondary" type="button">Activar</button></div>
             <div id="biometricCapability" class="device-capability" role="status">Comprobando compatibilidad del navegador…</div>
             <div class="row-actions wrap"><button id="testBiometricBtn" class="btn ghost hidden" type="button">Probar desbloqueo</button><button id="disableBiometricBtn" class="btn danger hidden" type="button">Desactivar biometría</button><button id="lockNowBtn" class="btn ghost" type="button">Bloquear ahora</button></div>
             <div id="bioStatus" class="inline-status"></div>
@@ -289,12 +291,20 @@
         <button data-nav="settings" type="button"><span>⚙</span><small>Ajustes</small></button>
         <div class="nav-trust"><span>Protección activa</span><small id="navUserLabel">Cuenta + bóveda local</small></div>
       </nav>
+      <nav id="mobileDock" class="mobile-dock" aria-label="Accesos rápidos" style="--dock-index:0">
+        <span class="dock-indicator" aria-hidden="true"></span>
+        <button data-nav="home" class="active" type="button" aria-label="Inicio" aria-current="page"><span aria-hidden="true">⌂</span><small>Inicio</small></button>
+        <button data-nav="patients" type="button" aria-label="Pacientes"><span aria-hidden="true">♙</span><small>Pacientes</small></button>
+        <button data-nav="emr" type="button" aria-label="Expediente"><span aria-hidden="true">▤</span><small>Expediente</small></button>
+        <button data-nav="rx" type="button" aria-label="Receta directa"><span aria-hidden="true">℞</span><small>Receta</small></button>
+        <button id="dockMoreBtn" type="button" aria-label="Más secciones" aria-controls="primaryNav" aria-expanded="false"><span aria-hidden="true">☷</span><small>Más</small></button>
+      </nav>
     </section>
   </div>
 
-  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo registrado<select id="patientSex"><option value="">Sin registrar</option><option value="F">Femenino</option><option value="M">Masculino</option><option value="O">Otro / no especificado</option></select></label></div><div id="patientAgeHint" class="micro">Edad calculada automáticamente: —</div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Dejar vacío significa información no confirmada; no equivale a alergias negadas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
+  <dialog id="patientDialog" class="modal"><form method="dialog" id="patientForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">PACIENTE</span><h3 id="patientDialogTitle">Alta paciente</h3></div><button value="cancel" class="icon-btn" aria-label="Cerrar">×</button></div><input id="patientId" type="hidden"><label>Nombre completo<input id="patientName" required></label><div class="form-grid two"><label>Fecha de nacimiento<input id="patientDob" type="date" required></label><label>Sexo registrado<select id="patientSex"><option value="">Sin registrar</option><option value="F">Femenino</option><option value="M">Masculino</option><option value="O">Otro / no especificado</option></select></label></div><label>Domicilio del paciente <small class="label-hint">Dato general del expediente conforme a NOM-004; captura el declarado por el paciente.</small><textarea id="patientAddress" rows="2" autocomplete="street-address" maxlength="500"></textarea></label><div id="patientAgeHint" class="micro">Edad calculada automáticamente: —</div><label>Alergias<textarea id="patientAllergies" rows="2" placeholder="Dejar vacío significa información no confirmada; no equivale a alergias negadas"></textarea></label><div class="form-grid two"><label>Teléfono opcional<input id="patientPhone" inputmode="tel"></label><label id="patientWeightWrap">Peso pediátrico (kg)<input id="patientWeight" type="number" min="0.5" max="250" step="0.1" inputmode="decimal"></label></div><label>Notas breves opcionales<textarea id="patientNotes" rows="2"></textarea></label><div class="row-actions end"><button value="cancel" class="btn ghost" type="button" id="cancelPatientBtn">Cancelar</button><button class="btn primary" type="submit">Guardar paciente</button></div></form></dialog>
 
-  <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
+  <dialog id="confirmDialog" class="modal"><div class="modal-card"><div class="modal-head"><div><span class="eyebrow">CONFIRMAR EMISIÓN</span><h3>La receta quedará inmutable</h3></div></div><p class="muted">Después de emitir podrás imprimirla, compartirla o anularla; no editarla.</p><div id="rxSafetyReview" class="soft-callout" role="status"></div><label id="rxSafetyAckWrap" class="ai-consent hidden"><input id="rxSafetyAck" type="checkbox"> Revisé estas coincidencias y confirmo mi decisión clínica.</label><div id="rxSafetyStatus" class="inline-status" role="status"></div><div class="row-actions end"><button id="cancelEmitBtn" class="btn ghost" type="button">Regresar</button><button id="confirmEmitBtn" class="btn primary" type="button">Emitir receta</button></div></div></dialog>
 
   <dialog id="encounterStartDialog" class="modal"><form id="encounterStartForm" class="modal-card"><div class="modal-head"><div><span class="eyebrow">NUEVA CONSULTA</span><h3>Selecciona el paciente</h3></div><button class="icon-btn" type="button" data-close-dialog="encounterStartDialog" aria-label="Cerrar">×</button></div><label>Paciente<select id="encounterPatient" required></select></label><div class="form-grid two"><label>Tipo de nota<select id="encounterType"><option value="first_visit">Primera vez</option><option value="follow_up">Subsecuente / evolución</option><option value="referral">Referencia / interconsulta</option></select></label><label>Fecha y hora<input id="encounterOccurredAt" type="datetime-local" required></label></div><label id="encounterSourceRxWrap">Receta previa relacionada (opcional)<select id="encounterSourceRx"><option value="">Sin receta previa</option></select><small class="label-hint">Solo aparecen recetas directas de este paciente que todavía no están ligadas a una nota.</small></label><p class="micro">La edad se calcula a la fecha de atención. Vincular una receta crea una relación clínica externa y no modifica su contenido firmado.</p><div class="row-actions end"><button class="btn ghost" type="button" data-close-dialog="encounterStartDialog">Cancelar</button><button class="btn primary" type="submit">Abrir expediente</button></div></form></dialog>
 
@@ -308,10 +318,12 @@
     <div class="modal-card manual-template-modal-card">
       <div class="modal-head"><div><span class="eyebrow">CONTINGENCIA / RECETA A MANO</span><h3>Dos recetas media carta por hoja</h3></div><button id="closeManualTemplateBtn" class="icon-btn" type="button" aria-label="Cerrar">×</button></div>
       <p class="muted">Vista previa del formato. Cada media carta recibe un folio manual distinto y conserva únicamente el QR de verificación de cédula. Este módulo es independiente de la receta electrónica.</p>
-      <div class="manual-batch-panel"><div><strong>Lote de impresión</strong><small>Define aquí cuántas recetas físicas necesitas.</small></div><div class="manual-count-row"><label>Número de recetas<input id="manualPrintCount" type="number" min="1" max="100" step="1" value="2" inputmode="numeric"></label><div class="manual-batch-info"><strong id="manualBatchSummary">2 recetas · 1 hoja carta · 2 folios únicos</strong><small>2 recetas por hoja carta. Si eliges 20, se imprimen 10 hojas.</small></div></div><div class="manual-print-warning"><strong>Importante:</strong> en el diálogo de impresión del teléfono/computadora deja <b>Copias = 1</b>. La cantidad se controla aquí para que cada receta tenga un folio distinto.</div></div>
+      <div class="manual-batch-panel"><div><strong>Lote de impresión</strong><small>Define aquí cuántas recetas físicas necesitas.</small></div><div class="manual-count-row"><label>Número de recetas<input id="manualPrintCount" type="number" min="1" max="100" step="1" value="2" inputmode="numeric"></label><div class="manual-batch-info"><strong id="manualBatchSummary">2 recetas · 1 hoja carta · 2 folios únicos</strong><small>2 recetas por hoja carta. Si eliges 20, se preparan 10 hojas.</small></div></div><div class="manual-print-warning"><strong>En iPhone:</strong> prepara el PDF y después pulsa “Abrir PDF” o “Compartir PDF”. Desde el visor puedes imprimir o guardar en Archivos. Usa <b>Copias = 1</b>. La app no puede comprobar si se imprimió el papel.</div></div>
       <div class="manual-style-panel"><div><strong>Estilo de impresión</strong><small>Estas paletas solo modifican la plantilla manual.</small></div><div id="manualStyleGrid" class="manual-style-grid"></div><p class="micro" style="margin:8px 2px 0">Los folios manuales son aleatorios e independientes de la fecha. Cada receta del lote recibe un serial distinto y el lote se registra en tu bóveda local.</p></div>
       <div id="manualTemplatePreview" class="manual-template-preview"></div>
-      <div class="row-actions end"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="regenerateManualFoliosBtn" class="btn secondary" type="button">Regenerar folios</button><button id="printManualTemplateBtn" class="btn primary" type="button">Imprimir lote</button></div>
+      <div class="manual-batch-history"><div class="section-head"><div><strong>Lotes recientes</strong><small>Recupera los mismos folios si necesitas repetir una impresión.</small></div></div><div id="manualBatchHistory" aria-live="polite"></div></div>
+      <p id="manualPdfStatus" class="micro" role="status">Primero prepara el PDF y reserva los folios en la bóveda.</p>
+      <div class="row-actions end manual-pdf-actions"><button id="cancelManualTemplateBtn" class="btn ghost" type="button">Cerrar</button><button id="regenerateManualFoliosBtn" class="btn secondary" type="button">Regenerar folios</button><button id="printManualTemplateBtn" class="btn primary" type="button">Preparar PDF y folios</button><button id="openManualPdfBtn" class="btn primary hidden" type="button">Abrir PDF</button><button id="shareManualPdfBtn" class="btn secondary hidden" type="button">Compartir PDF</button></div>
     </div>
   </dialog>
 
@@ -327,8 +339,13 @@
   <div id="toast" class="toast" role="status"></div>
   <div id="printArea" aria-hidden="true"></div>
   <script src="supabase-config.js"></script>
+  <script src="runtime.js"></script>
+  <script src="product-policy.js"></script>
+  <script src="native-print.js"></script>
+  <script src="native-biometric.js"></script>
   <script src="cloud.js"></script>
   <script src="qr.js"></script>
+  <script src="manual-pdf.js"></script>
   <script src="secure-sync.js"></script>
   <script src="clinical-assistant.js"></script>
   <script src="quick-note.js"></script>
@@ -337,3 +354,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+

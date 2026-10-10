@@ -1,0 +1,123 @@
+name: Clinovyra installable builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/clinovyra-native-emr]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CLINOVYRA_ANDROID_KEY_B64: ${{ secrets.CLINOVYRA_ANDROID_KEY_B64 }}
+      CLINOVYRA_KEY_PASSWORD: ${{ secrets.CLINOVYRA_ANDROID_KEY_PASSWORD }}
+      CLINOVYRA_ANDROID_CERT_SHA256: ${{ secrets.CLINOVYRA_ANDROID_CERT_SHA256 }}
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - run: npm ci --no-audit --no-fund
+      - run: npm run android:init
+      - name: Restore and verify the permanent release certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$CLINOVYRA_ANDROID_KEY_B64" || -z "$CLINOVYRA_KEY_PASSWORD" || -z "$CLINOVYRA_ANDROID_CERT_SHA256" ]]; then
+            echo '::error::Configure permanent Android keystore, password and SHA-256 fingerprint before distributing an update.'
+            exit 1
+          fi
+          printf '%s' "$CLINOVYRA_ANDROID_KEY_B64" | base64 --decode > "$RUNNER_TEMP/clinovyra-emr.p12"
+          chmod 600 "$RUNNER_TEMP/clinovyra-emr.p12"
+          ACTUAL="$(keytool -list -keystore "$RUNNER_TEMP/clinovyra-emr.p12" -storetype PKCS12 -storepass "$CLINOVYRA_KEY_PASSWORD" -alias clinovyra-emr -v | sed -n 's/^.*SHA256: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          EXPECTED="$(printf '%s' "$CLINOVYRA_ANDROID_CERT_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [[ -z "$ACTUAL" || "$ACTUAL" != "$EXPECTED" ]]; then
+            echo '::error::The Android release certificate does not match the pinned fingerprint.'
+            exit 1
+          fi
+          echo "CLINOVYRA_KEYSTORE_PATH=$RUNNER_TEMP/clinovyra-emr.p12" >> "$GITHUB_ENV"
+      - name: Build signed release APK
+        run: bash ./gradlew assembleRelease
+        working-directory: native/android
+      - name: Verify release APK signature and version
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=native/android/app/build/outputs/apk/release/app-release.apk
+          SIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          test -n "$SIGNER"
+          "$SIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/apk-verification.txt"
+          ACTUAL="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/apk-verification.txt" | head -1)"
+          EXPECTED="$(printf '%s' "$CLINOVYRA_ANDROID_CERT_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          test "$ACTUAL" = "$EXPECTED" || { echo '::error::Signed APK certificate mismatch.'; exit 1; }
+          sha256sum "$APK" > native/android/app/build/outputs/apk/release/SHA256.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Clinovyra-Android-signed-release
+          path: |
+            native/android/app/build/outputs/apk/release/app-release.apk
+            native/android/app/build/outputs/apk/release/SHA256.txt
+          if-no-files-found: error
+
+  windows:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
+    runs-on: windows-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run desktop:win
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Clinovyra-Windows-unsigned
+          path: native/dist/*.exe
+          if-no-files-found: error
+
+  ios:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event.label.name == 'native-ready'
+    runs-on: macos-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run ios:init
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.1 CURRENT_PROJECT_VERSION=361 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.1 CURRENT_PROJECT_VERSION=361 build
+      - name: Package unsigned iPhone IPA for AltStore/Sideloadly signing
+        run: |
+          mkdir -p ios-unsigned/Payload
+          cp -R ios-derived-device/Build/Products/Release-iphoneos/App.app ios-unsigned/Payload/
+          (cd ios-unsigned && zip -qry ../Clinovyra-iPhone-unsigned.ipa Payload)
+          unzip -t Clinovyra-iPhone-unsigned.ipa | tail -1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Clinovyra-iPhone-unsigned-IPA
+          path: native/Clinovyra-iPhone-unsigned.ipa
+          if-no-files-found: error

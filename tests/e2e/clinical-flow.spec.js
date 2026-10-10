@@ -1,7 +1,7 @@
 const {test,expect}=require('@playwright/test');
 
 test('synthetic patient → final note → linked prescription → timeline',async({page})=>{
-  page.on('dialog',d=>d.accept());
+  page.on('dialog',d=>d.accept(d.type()==='prompt'?'Tratamiento completado':undefined));
   await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-test-123');
   await page.locator('#setupPin2').fill('synthetic-test-123');
@@ -11,6 +11,8 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await page.locator('.bottom-nav [data-nav="settings"]').click();
   await page.locator('#profileName').fill('Dra. Prueba Sintética');
   await page.locator('#profileLicense').fill('TEST-000000');
+  await page.locator('#profileFacilityType').fill('Consultorio de medicina general');
+  await page.locator('#profileFacilityName').fill('Consulta Sintética');
   await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
   const canvas=page.locator('#profileSignatureCanvas');await canvas.scrollIntoViewIfNeeded();const box=await canvas.boundingBox();
   await page.mouse.move(box.x+40,box.y+70);await page.mouse.down();await page.mouse.move(box.x+180,box.y+35,{steps:8});await page.mouse.up();
@@ -18,9 +20,15 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await expect(page.locator('#toast')).toContainText('Firma guardada localmente');
 
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
-  await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');
+  await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');await page.locator('#patientAddress').fill('Domicilio sintético 123');
   await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
   await expect(page.locator('#patientList')).toContainText('Paciente Sintético Uno');
+  await page.locator('[data-record-patient]').first().click();
+  await expect(page.locator('#patientRecord')).toContainText('10 de febrero de 1990');
+  await expect(page.locator('#patientRecord')).toContainText('Información no confirmada');
+  await expect(page.locator('#screen-emr')).toHaveClass(/record-open/);
+  await page.locator('#closeRecord').click();
+  await expect(page.locator('#screen-patients')).toHaveClass(/active/);
 
   await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
   await page.locator('[data-note-field="reasonForVisit"]').fill('Tos y odinofagia');
@@ -41,6 +49,11 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 
   await page.locator('.bottom-nav [data-nav="emr"]').click();await page.locator('[data-open-record]').click();
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
+  await expect(page.locator('#patientRecord')).toContainText('Consultas recientes');
+  await expect(page.locator('#patientRecord')).toContainText('Tos y odinofagia');
+  await expect(page.locator('.medication-summary')).toContainText('Paracetamol');
+  await page.locator('[data-stop-med]').click();
+  await expect(page.locator('.medication-summary')).toContainText('Suspendido');
 });
 
 test('direct prescription remains available without creating an encounter',async({page})=>{
@@ -49,6 +62,103 @@ test('direct prescription remains available without creating an encounter',async
   await page.locator('#directRxHomeBtn').click();
   await expect(page.locator('#screen-rx')).toHaveClass(/active/);
   await expect(page.locator('#encounterCount')).toHaveText('0');
+});
+
+test('manual PDF reserves once, opens real PDF and reuses original folios after retry',async({page})=>{
+  await page.addInitScript(()=>{window.__opened=[];window.open=(url)=>{window.__opened.push(url);return {closed:false}}});
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-manual-123');await page.locator('#setupPin2').fill('synthetic-manual-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#manualTemplateBtn').click();await expect(page.locator('#manualTemplateDialog')).toBeVisible();
+  await page.locator('#manualPrintCount').fill('3');await page.locator('#manualPrintCount').dispatchEvent('change');
+  await expect(page.locator('#manualTemplatePreview .manual-letter-page')).toHaveCount(2);
+  const originals=await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents();
+  await page.evaluate(()=>{const build=window.ClinovyraManualPDF.build;window.ClinovyraManualPDF={...window.ClinovyraManualPDF,build:options=>{window.__manualPdfPages=options.pagesHtml;return build(options)}}});
+  await page.locator('#printManualTemplateBtn').click();await expect(page.locator('#openManualPdfBtn')).toBeVisible();
+  const sameLayout=await page.evaluate(()=>window.__manualPdfPages.every((html,i)=>{const sheet=document.createElement('div');sheet.innerHTML=html;return sheet.firstElementChild.outerHTML===document.querySelectorAll('#manualTemplatePreview .manual-letter-page')[i].outerHTML}));
+  expect(sameLayout).toBe(true);
+  expect(originals).toHaveLength(3);expect(new Set(originals).size).toBe(3);
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  await expect(page.locator('#manualBatchHistory')).toContainText('impresión no confirmada');
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  await page.locator('#openManualPdfBtn').click();
+  const pdf=await page.evaluate(async()=>{const response=await fetch(window.__opened[0]);return {type:response.headers.get('content-type'),start:(await response.text()).slice(0,8)}});
+  expect(pdf.type).toContain('application/pdf');expect(pdf.start).toContain('%PDF-1.4');
+  await page.locator('#cancelManualTemplateBtn').click();
+  await page.locator('#manualTemplateBtn').click();
+  await page.locator('#regenerateManualFoliosBtn').click();
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).not.toEqual(originals);
+  await page.locator('#manualBatchHistory [data-reprint-batch]').first().click();
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).toEqual(originals);
+  await page.locator('#openManualPdfBtn').click();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  expect(await page.evaluate(()=>window.__opened.length)).toBe(2);
+  page.once('dialog',d=>d.accept());
+  await page.locator('#manualBatchHistory [data-archive-batch]').first().click();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(0);
+  await page.locator('#regenerateManualFoliosBtn').click();
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).not.toEqual(originals);
+});
+
+test('iPhone-sized preview fits and a blocked PDF window triggers download without new batch',async({page})=>{
+  await page.addInitScript(()=>{window.open=()=>null});
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-print-123');await page.locator('#setupPin2').fill('synthetic-print-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#manualTemplateBtn').click();
+  const fit=await page.locator('#manualTemplatePreview').evaluate(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,scale:parseFloat(getComputedStyle(el).getPropertyValue('--manual-preview-scale'))}));
+  expect(fit.scrollWidth).toBeLessThanOrEqual(fit.clientWidth+1);
+  expect(fit.scale).toBeLessThan(.5);
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  const download=page.waitForEvent('download');
+  await page.locator('#openManualPdfBtn').click();expect((await download).suggestedFilename()).toMatch(/Clinovyra-BATCH-.*\.pdf/);
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+});
+
+test('failed PDF capture reserves once and retry preserves the original folios',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-retry-123');await page.locator('#setupPin2').fill('synthetic-retry-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#manualTemplateBtn').click();
+  const folios=await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents();
+  await page.evaluate(()=>{const original=window.ClinovyraManualPDF.build;let first=true;window.ClinovyraManualPDF={...window.ClinovyraManualPDF,build:(options)=>{if(first){first=false;return Promise.reject(new Error('Fallo sintético de captura'))}return original(options)}}});
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#manualPdfStatus')).toContainText('Fallo sintético de captura');
+  await expect(page.locator('#openManualPdfBtn')).toBeHidden();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  await page.locator('#printManualTemplateBtn').click();
+  await expect(page.locator('#openManualPdfBtn')).toBeVisible();
+  await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
+  expect(await page.locator('#manualTemplatePreview .manual-folio-chip strong').allTextContents()).toEqual(folios);
+});
+
+test('mobile dock follows a finger swipe and theme palettes are separated',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-swipe-123');await page.locator('#setupPin2').fill('synthetic-swipe-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#mobileDock #dockMoreBtn').click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await expect(page.locator('#themeGrid > .theme-section')).toHaveCount(2);
+  await expect(page.locator('#themeGrid > .theme-section').first()).toContainText('Temas claros');
+  await expect(page.locator('#themeGrid > .theme-section').nth(1)).toContainText('Temas nocturnos');
+  await page.locator('#themeGrid [data-theme="prismNight"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode','dark');
+  await page.locator('#themeGrid [data-theme="glacierPearl"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode','light');
+  await page.locator('#mobileDock [data-nav="home"]').click();
+  await page.evaluate(()=>{
+    const dock=document.querySelector('#mobileDock'),button=dock.querySelector('[data-nav="home"]'),r=dock.getBoundingClientRect();
+    const make=(type,x)=>new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:11,pointerType:'touch',isPrimary:true,clientX:x,clientY:r.top+r.height/2});
+    button.dispatchEvent(make('pointerdown',r.left+r.width*.1));
+    dock.dispatchEvent(make('pointermove',r.left+r.width*.3));
+    dock.dispatchEvent(make('pointerup',r.left+r.width*.3));
+  });
+  await expect(page.locator('#screen-patients')).toHaveClass(/active/);
+  await expect(page.locator('#mobileDock [data-nav="patients"]')).toHaveAttribute('aria-current','page');
 });
 
 test('privacy-first local assistant structures a note without network AI',async({page})=>{
@@ -75,6 +185,10 @@ test('desktop uses a persistent side rail and mobile uses a top dropdown',async(
 
   await page.setViewportSize({width:390,height:844});
   await expect(page.locator('#menuBtn')).toBeVisible();
+  await expect(page.locator('#mobileDock')).toBeVisible();
+  await page.locator('#mobileDock [data-nav="patients"]').click();
+  await expect(page.locator('#mobileDock [data-nav="patients"]')).toHaveAttribute('aria-current','page');
+  await page.locator('#dockMoreBtn').click();await expect(page.locator('#primaryNav')).toBeVisible();await page.keyboard.press('Escape');
   await expect(page.locator('#primaryNav')).toBeHidden();
   await page.locator('#menuBtn').click();
   await expect(page.locator('#primaryNav')).toBeVisible();
@@ -92,6 +206,35 @@ test('settings exposes session controls without hiding local security',async({pa
   await expect(page.locator('#refreshSessionsBtn')).toBeVisible();await expect(page.locator('#signOutOthersBtn')).toBeVisible();await expect(page.locator('#deauthorizeDeviceBtn')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Bloqueo y biometría'})).toBeVisible();
   await expect(page.locator('#biometricCapability')).toBeVisible();await expect(page.locator('#lockNowBtn')).toBeVisible();
+});
+
+test('backup import verifies its PIN before replacing the local vault',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-backup-123');await page.locator('#setupPin2').fill('synthetic-backup-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await page.locator('#profileName').fill('Perfil del respaldo');
+  await page.locator('#profileLicense').fill('TEST-BACKUP-001');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  await expect(page.locator('#toast')).toContainText('Perfil médico guardado');
+  const downloadPromise=page.waitForEvent('download');
+  await page.locator('#exportBackupBtn').click();
+  const download=await downloadPromise;
+  const backup=require('fs').readFileSync(await download.path());
+  await page.locator('#profileName').fill('Perfil actual');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  let pin='incorrecto';
+  page.on('dialog',dialog=>dialog.type()==='prompt'?dialog.accept(pin):dialog.accept());
+  await page.locator('#importBackupInput').setInputFiles({name:'respaldo.json',mimeType:'application/json',buffer:backup});
+  await expect(page.locator('#toast')).toContainText('PIN del respaldo es incorrecto');
+  await expect(page.locator('#profileName')).toHaveValue('Perfil actual');
+  pin='synthetic-backup-123';
+  await page.locator('#importBackupInput').setInputFiles({name:'respaldo.json',mimeType:'application/json',buffer:backup});
+  await expect(page.locator('#unlockView')).toBeVisible();
+  await page.locator('#unlockPin').fill(pin);
+  await page.locator('#unlockForm').getByRole('button',{name:'Desbloquear'}).click();
+  await page.locator('#primaryNav [data-nav="settings"]').click();
+  await expect(page.locator('#profileName')).toHaveValue('Perfil del respaldo');
 });
 
 test('vault PIN rotates without data loss and night mode remains reversible',async({page})=>{
@@ -188,7 +331,8 @@ test('direct prescription is searchable in the patient record and can seed a lat
   await expect(page.locator('.linked-rx-banner')).toContainText(rxId);
 
   await page.locator('#primaryNav [data-nav="patients"]').click();
-  await page.locator('[data-record-patient]').click();
+  await page.locator('[data-record-patient]').first().click();
   await expect(page.locator('#patientRecord')).toContainText('Receta vinculada');
   await expect(page.locator(`[data-link-recipe="${rxId}"]`)).toHaveCount(0);
 });
+

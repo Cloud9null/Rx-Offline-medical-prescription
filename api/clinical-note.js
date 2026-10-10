@@ -6,6 +6,17 @@ const SECTION_KEYS=['reasonForVisit','currentIllness','reviewOfSystems','physica
 const schema={type:'object',additionalProperties:false,required:['sections','diagnoses','reviewWarnings'],properties:{sections:{type:'object',additionalProperties:false,required:SECTION_KEYS,properties:Object.fromEntries(SECTION_KEYS.map(k=>[k,{type:'string',maxLength:12000}]))},diagnoses:{type:'array',maxItems:12,items:{type:'object',additionalProperties:false,required:['text','status'],properties:{text:{type:'string',maxLength:500},status:{type:'string',enum:['working','confirmed','ruled_out','history']}}}},reviewWarnings:{type:'array',maxItems:12,items:{type:'string',maxLength:500}}}};
 
 function send(res,status,body){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store, private');res.setHeader('X-Content-Type-Options','nosniff');res.end(JSON.stringify(body))}
+const NATIVE_ORIGINS=new Set(['capacitor://localhost','https://localhost','app://clinovyra.local']);
+function nativeCors(req,res){
+  const origin=String(req.headers?.origin||'');
+  if(!NATIVE_ORIGINS.has(origin))return false;
+  res.setHeader('Access-Control-Allow-Origin',origin);
+  res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');
+  res.setHeader('Access-Control-Max-Age','600');
+  res.setHeader('Vary','Origin');
+  return true;
+}
 async function authorize(token){
   if(!token)return null;
   const headers={apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:`Bearer ${token}`};
@@ -37,6 +48,8 @@ function providerError(status){
 }
 
 module.exports=async function handler(req,res){
+  const allowedNative=nativeCors(req,res);
+  if(req.method==='OPTIONS'){if(!allowedNative)return send(res,403,{error:'Origen no autorizado.'});res.statusCode=204;return res.end()}
   const provider=providerConfig(req);
   if(req.method==='GET')return send(res,200,{ok:true,externalAI:Boolean(provider),provider:provider?.kind||'disabled',model:provider?.model||null});
   if(req.method!=='POST')return send(res,405,{error:'Método no permitido.'});
@@ -54,3 +67,4 @@ module.exports=async function handler(req,res){
     const text=outputText(payload);if(!text)throw new Error('empty');const result=JSON.parse(text);return send(res,200,{...result,model:provider.model,provider:provider.kind});
   }catch{return send(res,502,{error:'No fue posible generar el borrador. La nota local no fue modificada.'})}
 };
+

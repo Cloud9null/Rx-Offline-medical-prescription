@@ -1,0 +1,6 @@
+{
+  "appId": "com.clinovyra.emr",
+  "appName": "Clinovyra EMR",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

@@ -86,6 +86,25 @@
   function canonicalJson(value){return JSON.stringify(stable(value))}
   function cleanText(v,max=20000){return String(v??'').replace(/\u0000/g,'').trim().slice(0,max)}
 
+  function medicationReview(patient,medications=[],allergies=[]){
+    const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    const matches=[],seen=new Set();
+    const active=allergies.filter(a=>a?.patientId===patient?.id&&a.status==='active'&&normalize(a.substance).length>=4);
+    for(const med of medications){
+      const names=[med.name,med.brand].map(normalize).filter(Boolean);
+      for(const allergy of active){
+        const substance=normalize(allergy.substance);
+        if(names.some(name=>` ${name} `.includes(` ${substance} `)||` ${substance} `.includes(` ${name} `))){
+          const id=`${normalize(med.name)}:${substance}`;
+          if(!seen.has(id)){matches.push({medication:med.name,substance:allergy.substance,reaction:allergy.reaction||''});seen.add(id)}
+        }
+      }
+    }
+    const names=medications.map(m=>normalize(m.name)).filter(Boolean);
+    const duplicates=[...new Set(names.filter((name,index)=>names.indexOf(name)!==index))];
+    return {matches,duplicates,allergyStatus:patient?.clinical?.allergyKnowledge||'unknown',requiresAcknowledgement:matches.length>0||duplicates.length>0};
+  }
+
   function validateDraft(note,diagnoses=[]){
     const errors=[];
     if(!cleanText(note?.sections?.reasonForVisit,500))errors.push('Motivo de consulta');
@@ -102,8 +121,9 @@
       schema:'rx-offline-emr-note',version:1,
       noteId:note.id,encounterId:encounter.id,folio:encounter.folio,
       occurredAt:encounter.occurredAt,noteType:note.noteType,
-      patient:{id:patient.id,name:patient.name,dob:patient.dob||'',sex:patient.sex||'',ageAtEncounter:ageAt(patient.dob,encounter.occurredAt)?.label||''},
+      patient:{id:patient.id,name:patient.name,dob:patient.dob||'',sex:patient.sex||'',address:patient.address||'',ageAtEncounter:ageAt(patient.dob,encounter.occurredAt)?.label||''},
       author:{name:profile.name||'',role:profile.role||'',license:profile.license||''},
+      facility:{type:profile.facilityType||'',name:profile.facilityName||'Consultorio médico',address:profile.address||''},
       sections:stable(note.sections||{}),
       diagnoses:diagnoses.map(d=>({id:d.id,code:d.code||'',text:d.text||'',status:d.status||'working'})),
       observations:observations.map(o=>stable(o)),
@@ -125,5 +145,6 @@
     return Array.from(byId.values());
   }
 
-  return {COLLECTIONS,NOTE_TYPES,emptyState,ensureState,uuid,encounterFolio,parseLocalDate,ageAt,bmi,vitalAlerts,stable,canonicalJson,cleanText,validateDraft,noteSnapshot,mergeRecord,mergeCollection};
+  return {COLLECTIONS,NOTE_TYPES,emptyState,ensureState,uuid,encounterFolio,parseLocalDate,ageAt,bmi,vitalAlerts,stable,canonicalJson,cleanText,medicationReview,validateDraft,noteSnapshot,mergeRecord,mergeCollection};
 });
+

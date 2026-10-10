@@ -56,7 +56,7 @@
     const button=$('#quickNoteAiBtn');button.disabled=true;status('Generando un borrador clínico desidentificado…');
     try{
       const payload=root.RxClinicalAssistant.buildAiPayload(value,{},context());
-      const response=await fetch('/api/clinical-note',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(payload)});
+      const response=await fetch(window.ClinovyraRuntime?.clinicalApiUrl()||'/api/clinical-note',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify(payload)});
       const body=await response.json();if(!response.ok)throw new Error(body?.error||'No se pudo generar el borrador.');
       renderResult(body);$('#quickNoteConsent').checked=false;
       status(`Borrador generado${body.model?` con ${body.model}`:''}. Revisa omisiones y exactitud antes de usarlo.`,true);
@@ -67,7 +67,7 @@
   function downloadOutput(){const value=clean($('#quickNoteOutput')?.value);if(!value)return status('Primero genera o escribe un borrador.');const blob=new Blob([value],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`nota-clinica-borrador-${new Date().toISOString().slice(0,10)}.txt`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);deps.toast?.('Archivo .txt preparado')}
   async function shareOutput(){const value=clean($('#quickNoteOutput')?.value);if(!value)return status('Primero genera o escribe un borrador.');if(navigator.share)try{return await navigator.share({title:'Borrador de nota clínica',text:value})}catch(error){if(error?.name==='AbortError')return}await copyOutput();status('Compartir no está disponible; se intentó copiar el texto.')}
   function showReadMode(){const value=clean($('#quickNoteOutput')?.value);if(!value)return status('Primero genera o escribe un borrador.');$('#quickNoteReadText').textContent=value;$('#quickNoteReadDialog').showModal()}
-  function printOutput(){const value=clean($('#quickNoteOutput')?.value);if(!value)return status('Primero genera o escribe un borrador.');const area=$('#printArea');area.classList.remove('manual-print-area');area.textContent='';const page=document.createElement('article'),pre=document.createElement('pre');page.className='quick-note-print';pre.textContent=value;page.appendChild(pre);area.appendChild(page);document.body.classList.add('printing-quick-note');setTimeout(()=>window.print(),80);setTimeout(()=>document.body.classList.remove('printing-quick-note'),800)}
+  function printOutput(){const value=clean($('#quickNoteOutput')?.value);if(!value)return status('Primero genera o escribe un borrador.');const area=$('#printArea');area.classList.remove('manual-print-area');area.textContent='';const page=document.createElement('article'),pre=document.createElement('pre');page.className='quick-note-print';pre.textContent=value;page.appendChild(pre);area.appendChild(page);document.body.classList.add('printing-quick-note');setTimeout(()=>window.ClinovyraPrint.print('Clinovyra - nota rápida').catch(e=>status(e.message)),80);setTimeout(()=>document.body.classList.remove('printing-quick-note'),window.Capacitor?.isNativePlatform?.()?60000:800)}
   function clearAll(){if((points()||clean($('#quickNoteOutput')?.value))&&!confirm('¿Limpiar este borrador temporal? No se puede recuperar.'))return;$('#quickNoteForm')?.reset();output('');status('Borrador temporal limpio.',true)}
   function onLock(){if($('#quickNotePoints'))$('#quickNotePoints').value='';output('');status('');$('#quickNoteReadText')&&( $('#quickNoteReadText').textContent='' );$('#quickNoteReadDialog')?.open&&$('#quickNoteReadDialog').close()}
 
@@ -82,3 +82,4 @@
   function init(nextDeps={}){deps={...deps,...nextDeps};bind()}
   return {init,onLock,formatStandalone};
 });
+

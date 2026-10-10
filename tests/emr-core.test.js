@@ -1,6 +1,26 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const C=require('../emr-core.js');
+const policy=require('../product-policy.js');
+
+test('commercial prescriptions require a signed final note for the same patient and encounter',()=>{
+  const emr={encounters:[{id:'e1',patientId:'p1',status:'final'}],clinicalNotes:[{id:'n1',encounterId:'e1',patientId:'p1',status:'final',canonicalText:'signed',finalSnapshot:{},seal:{hash:'h1'}}]};
+  const context={encounterId:'e1',noteId:'n1',patientId:'p1'};
+  assert.equal(policy.validatePrescription({mode:'saas',patientId:'p1',context,emr}).ok,true);
+  assert.equal(policy.validatePrescription({mode:'saas',patientId:'p2',context,emr}).ok,false);
+  assert.equal(policy.validatePrescription({mode:'saas',patientId:'p1',emr}).ok,false);
+  assert.equal(policy.validatePrescription({mode:'saas',patientId:'p1',context,emr:{...emr,clinicalNotes:[{...emr.clinicalNotes[0],status:'draft'}]}}).ok,false);
+  assert.equal(policy.validatePrescription({mode:'personal',patientId:'p1',emr}).ok,true);
+});
+
+test('prescription review reports textual allergy matches and duplicates without claiming pharmacological coverage',()=>{
+  const patient={id:'p1',clinical:{allergyKnowledge:'known'}};
+  const review=C.medicationReview(patient,[{name:'Amoxicilina / clavulanato'},{name:'Paracetamol'},{name:'Paracetamol'}],[{patientId:'p1',status:'active',substance:'amoxicilina',reaction:'Urticaria'}]);
+  assert.equal(review.matches[0].substance,'amoxicilina');
+  assert.deepEqual(review.duplicates,['paracetamol']);
+  assert.equal(review.requiresAcknowledgement,true);
+  assert.equal(C.medicationReview(patient,[{name:'Paracetamol'}],[{patientId:'p2',status:'active',substance:'Paracetamol'}]).matches.length,0);
+});
 
 test('migrates a legacy vault additively without changing existing collections',()=>{
   const patient={id:'p1',name:'Paciente Sintético'},vault={patients:[patient],recipes:[{id:'RX-OLD'}]};
@@ -39,3 +59,4 @@ test('merge never overwrites a finalized local note and accepts a remote final o
   assert.equal(C.mergeRecord(localFinal,remoteDraft),localFinal);
   assert.equal(C.mergeRecord(remoteDraft,{...localFinal,updatedAt:'2025-01-01'}).status,'final');
 });
+
