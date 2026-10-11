@@ -20,6 +20,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm ci --prefix native --no-audit --no-fund
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
