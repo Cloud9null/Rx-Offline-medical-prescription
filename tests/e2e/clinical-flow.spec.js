@@ -64,6 +64,39 @@ test('direct prescription remains available without creating an encounter',async
   await expect(page.locator('#encounterCount')).toHaveText('0');
 });
 
+test('direct recipe keeps its print design and links a later note without changing the seal',async({page})=>{
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-design-123');await page.locator('#setupPin2').fill('synthetic-design-123');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('.bottom-nav [data-nav="settings"]').click();
+  await page.locator('#profileName').fill('Dra. Sintética');await page.locator('#profileLicense').fill('TEST-123');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  const canvas=page.locator('#profileSignatureCanvas');await canvas.scrollIntoViewIfNeeded();const b=await canvas.boundingBox();
+  await page.mouse.move(b.x+30,b.y+80);await page.mouse.down();await page.mouse.move(b.x+150,b.y+35,{steps:6});await page.mouse.up();
+  await page.locator('#saveProfileSignature').click();
+  await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
+  await page.locator('#patientName').fill('Paciente Sintético Diseño');await page.locator('#patientDob').fill('1991-02-02');
+  await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
+  await page.locator('.bottom-nav [data-nav="home"]').click();await page.locator('#directRxHomeBtn').click();
+  await page.locator('#rxPatient').selectOption({label:'Paciente Sintético Diseño'});
+  await page.locator('#rxLayout').selectOption('side');
+  await page.locator('.m-name').fill('Medicamento sintético');await page.locator('.m-strength').fill('10 mg');
+  await page.locator('.m-dose').fill('10 mg');await page.locator('.m-frequency').fill('Cada 24 horas');await page.locator('.m-duration').fill('2 días');
+  await page.locator('#rxForm').getByRole('button',{name:'Revisar receta'}).click();
+  await page.locator('#confirmEmitBtn').click();
+  await expect(page.locator('#recipeDetail .rx-layout-side')).toBeVisible();
+  await expect(page.locator('#recipeDetail')).toContainText('Integridad local verificada');
+  const originalHash=await page.locator('#recipeDetail .rx-footer .hash').innerText();
+  await page.locator('#recipeNoteBtn').click();
+  await expect(page.locator('#encounterSourceRx')).not.toHaveValue('');
+  await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
+  await expect(page.locator('.linked-rx-banner')).toContainText('Medicamento sintético');
+  await page.locator('[data-open-linked-rx]').click();
+  await expect(page.locator('#recipeDetail .rx-layout-side')).toBeVisible();
+  await expect(page.locator('#recipeDetail .rx-footer .hash')).toHaveText(originalHash);
+  await expect(page.locator('#recipeNoteBtn')).toContainText('Ver nota vinculada');
+});
+
 test('manual PDF reserves once, opens real PDF and reuses original folios after retry',async({page})=>{
   await page.addInitScript(()=>{window.__opened=[];window.open=(url)=>{window.__opened.push(url);return {closed:false}}});
   await page.goto('/?e2e=1');

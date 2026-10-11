@@ -1,4 +1,4 @@
-name: Clinovyra installable builds
+name: Medivorix installable builds
 
 on:
   workflow_dispatch:
@@ -68,7 +68,7 @@ jobs:
           sha256sum "$APK" > native/android/app/build/outputs/apk/release/SHA256.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Clinovyra-Android-signed-release
+          name: Medivorix-Android-signed-release
           path: |
             native/android/app/build/outputs/apk/release/app-release.apk
             native/android/app/build/outputs/apk/release/SHA256.txt
@@ -90,7 +90,7 @@ jobs:
       - run: npm run desktop:win
       - uses: actions/upload-artifact@v4
         with:
-          name: Clinovyra-Windows-unsigned
+          name: Medivorix-Windows-unsigned
           path: native/dist/*.exe
           if-no-files-found: error
 
@@ -108,16 +108,16 @@ jobs:
           node-version: '22'
       - run: npm ci --no-audit --no-fund
       - run: npm run ios:init
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.2 CURRENT_PROJECT_VERSION=362 build
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.6.2 CURRENT_PROJECT_VERSION=362 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.7.0 CURRENT_PROJECT_VERSION=370 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.7.0 CURRENT_PROJECT_VERSION=370 build
       - name: Package unsigned iPhone IPA for AltStore/Sideloadly signing
         run: |
           mkdir -p ios-unsigned/Payload
           cp -R ios-derived-device/Build/Products/Release-iphoneos/App.app ios-unsigned/Payload/
-          (cd ios-unsigned && zip -qry ../Clinovyra-iPhone-unsigned.ipa Payload)
-          unzip -t Clinovyra-iPhone-unsigned.ipa | tail -1
+          (cd ios-unsigned && zip -qry ../Medivorix-iPhone-unsigned.ipa Payload)
+          unzip -t Medivorix-iPhone-unsigned.ipa | tail -1
       - uses: actions/upload-artifact@v4
         with:
-          name: Clinovyra-iPhone-unsigned-IPA
-          path: native/Clinovyra-iPhone-unsigned.ipa
+          name: Medivorix-iPhone-unsigned-IPA
+          path: native/Medivorix-iPhone-unsigned.ipa
           if-no-files-found: error

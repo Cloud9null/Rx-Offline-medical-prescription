@@ -4,10 +4,10 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const path=require('node:path');
 
-function cloudHarness({failRead=false}={}){
+function cloudHarness({failRead=false,failEmr=false,expired=false}={}){
   const calls=[];
   const remotePatient={id:'71a487db-06e7-4f20-88c8-358b5de27cea',name:'Paciente de prueba',updatedAt:'2026-10-01T00:00:00Z'};
-  const session={access_token:'test-token',refresh_token:'test-refresh',expires_at:Date.now()+3600000,user:{id:'owner-test'}};
+  const session={access_token:'test-token',refresh_token:'test-refresh',expires_at:Date.now()+(expired?-1000:3600000),user:{id:'owner-test'}};
   const storage={getItem:()=>JSON.stringify(session),setItem(){},removeItem(){}};
   const window={RX_SUPABASE_CONFIG:{url:'https://example.supabase.co',publishableKey:'sb_publishable_test_1234567890'},dispatchEvent(){}};
   const fetch=async(url,options={})=>{
@@ -15,12 +15,17 @@ function cloudHarness({failRead=false}={}){
     calls.push(route);
     if(failRead&&route==='/rest/v1/patients')throw new TypeError('network unavailable');
     let body;
-    if(route==='/auth/v1/user')body=session.user;
+    if(route==='/auth/v1/token')body={...session,access_token:'refreshed-token',refresh_token:'refreshed-once',expires_in:3600};
+    else if(route==='/auth/v1/user')body=session.user;
     else if(route==='/rest/v1/rpc/rx_cloud_healthcheck')body={ok:true};
     else if(route==='/rest/v1/profiles')body=[{profile:{name:'Perfil remoto'}}];
     else if(route==='/rest/v1/patients')body=[{payload:remotePatient}];
     else if(route==='/rest/v1/prescriptions')body=[];
     else if(route==='/rest/v1/rpc/rx_sync_bundle')body={ok:true,profile:{name:'Perfil local'},patients:[remotePatient],recipes:[]};
+    else if(route==='/rest/v1/rpc/emr_sync_bundle'){
+      if(failEmr)return {ok:false,status:503,text:async()=>JSON.stringify({message:'EMR unavailable'})};
+      body={ok:true,clinicalNotes:[]};
+    }
     else throw new Error(`Unexpected request ${route}`);
     return {ok:true,text:async()=>JSON.stringify(body)};
   };
@@ -43,4 +48,20 @@ test('a failed remote read blocks the first write from a new device',async()=>{
   const vault={profile:{name:'Perfil local'},patients:[],recipes:[],signing:{}};
   await assert.rejects(cloud.syncVault(vault,()=>({})),/Protección de restauración/);
   assert.ok(!calls.includes('/rest/v1/rpc/rx_sync_bundle'));
+});
+
+test('parallel requests on one device consume a rotated refresh token only once',async()=>{
+  const {cloud,calls}=cloudHarness({expired:true});
+  const values=await Promise.all([cloud.accessToken(),cloud.accessToken(),cloud.accessToken()]);
+  assert.deepEqual(values,['refreshed-token','refreshed-token','refreshed-token']);
+  assert.equal(calls.filter(x=>x==='/auth/v1/token').length,1);
+});
+
+test('EMR outage retains confirmed patient sync and reports notes as pending',async()=>{
+  const {cloud,remotePatient}=cloudHarness({failEmr:true});
+  const vault={profile:{name:'Perfil local',license:'123'},patients:[],recipes:[],signing:{},emr:{clinicalNotes:[],documents:[]}};
+  const result=await cloud.syncVault(vault,()=>({}));
+  assert.equal(vault.patients[0].id,remotePatient.id);
+  assert.equal(result.emrResult.available,false);
+  assert.match(result.emrResult.error,/EMR unavailable/);
 });

@@ -19,5 +19,5 @@ await copyFile(join(base,'native','node_modules','@capacitor','core','dist','cap
 await cp(join(base,'icons'),join(out,'icons'),{recursive:true});
 await cp(join(base,'assets'),join(out,'assets'),{recursive:true});
 await mkdir(nativeAssets,{recursive:true});
-await copyFile(join(base,'icons','clinovyra.png'),join(nativeAssets,'logo.png'));
-console.log(`Clinovyra native bundle: ${files.length} files, Capacitor JS bridge and brand assets`);
+await copyFile(join(base,'icons','medivorix.png'),join(nativeAssets,'logo.png'));
+console.log(`Medivorix native bundle: ${files.length} files, Capacitor JS bridge and brand assets`);

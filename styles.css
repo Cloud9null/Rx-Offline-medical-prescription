@@ -56,7 +56,7 @@ html[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel)}h
 @media(max-width:600px){.form-grid.three{grid-template-columns:1fr}.quick-note-context label:first-child{grid-column:auto}.quick-note-actions .btn{flex:1 1 calc(50% - 10px)}#quickNoteOutput{min-height:390px}.quick-note-read-dialog .modal-card{padding:16px}.quick-note-read-text{padding:18px}.bottom-nav{padding-bottom:max(8px,env(safe-area-inset-bottom))}}
 @media print{body.printing-quick-note>*:not(#printArea){display:none!important}body.printing-quick-note #printArea{display:block!important}.quick-note-print{width:8.27in;min-height:11.69in;padding:.55in .65in;background:#fff;color:#111}.quick-note-print pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:10pt/1.55 Arial,sans-serif}@page{size:A4 portrait;margin:0}}
 
-/* Clinovyra: identidad y navegación móvil de cinco acciones. */
+/* Medivorix: identidad y navegación móvil de cinco acciones. */
 .brand-symbol{width:56px;height:56px;object-fit:cover;border-radius:16px;background:#fff;box-shadow:0 8px 22px rgba(8,75,143,.16);flex:none}.brand-symbol.small{width:40px;height:40px;border-radius:12px}.clinovyra-signature{display:flex;justify-content:center;margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:0 8px 26px rgba(13,51,91,.06)}.clinovyra-signature img{display:block;width:min(100%,560px);height:auto;aspect-ratio:4/3;object-fit:contain}.mobile-dock{display:none}
 @media(max-width:899px){
   .content{padding-bottom:calc(118px + env(safe-area-inset-bottom))}
@@ -90,6 +90,30 @@ html[data-theme-mode="dark"] .patient-summary-grid div{background:var(--panel)}h
 @media(prefers-reduced-motion:reduce){.theme-card{transition:none}.theme-card:hover{transform:none}}
 .manual-batch-row>div{min-width:0}.manual-batch-row strong,.manual-batch-row small{display:block;overflow-wrap:anywhere}.manual-batch-row small{color:var(--muted);font-size:.72rem;margin-top:3px}
 @media(max-width:540px){.manual-batch-row{align-items:flex-start;flex-direction:column}.manual-batch-row button{align-self:flex-start}}
+
+/* Medivorix: patient actions and recipe follow-up remain readable at phone width. */
+.recipe-followup{display:grid;gap:8px;margin-top:14px;padding:16px;border:1px solid color-mix(in srgb,var(--primary) 25%,var(--line));border-radius:18px;background:color-mix(in srgb,var(--primary) 6%,var(--panel))}
+.recipe-followup>strong{color:var(--text)}.recipe-followup>span{color:var(--text);overflow-wrap:anywhere}.recipe-followup small{color:var(--muted)}
+.recipe-followup .btn,.record-event-actions .btn{min-height:44px;white-space:normal}
+.rx-layout-picker{display:grid;gap:5px;margin:16px 0 8px}.rx-layout-picker select{max-width:420px}.rx-layout-picker small{font-weight:400;color:var(--muted)}
+.record-event-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+@media(max-width:760px){.recipe-followup .row-actions{display:grid;grid-template-columns:1fr}.record-event-actions{justify-content:flex-start}.record-event-actions .btn{flex:1 1 140px}}
+
+/* The signed design belongs to the recipe, independently of the current UI theme. */
+.rx-sheet,.rx-sheet:before,.rx-sheet .rx-logo,.rx-sheet .rx-patient,.rx-sheet .rx-patient .patient-chip{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+.rx-sheet .rx-patient-emphasis .patient-name{background:color-mix(in srgb,var(--rxp) 8%,#fff)}
+.rx-layout-side:before{inset:0 auto 0 0;width:.17in;height:auto;background:linear-gradient(180deg,var(--rxp) 0 72%,var(--rxs) 72%)}
+.rx-layout-side{padding-left:.45in}.rx-layout-side .rx-header{border-bottom:2px solid var(--rxp)}
+.rx-layout-side .rx-patient{background:color-mix(in srgb,var(--rxp) 5%,#fff);border-radius:4px}
+.rx-layout-side .rx-patient .patient-chip{border-radius:4px}
+.rx-layout-side .rx-symbol{color:var(--rxs)}
+.rx-layout-clean:before{height:.045in;background:var(--rxp)}
+.rx-layout-clean .rx-header{border-bottom:1px solid var(--rxs)}
+.rx-layout-clean .rx-logo{border-radius:4px;box-shadow:none;background:var(--rxp)}
+.rx-layout-clean .rx-patient{border:0;border-top:1px solid var(--rxp);border-bottom:1px solid var(--rxp);background:#fff;border-radius:0;padding-left:0;padding-right:0}
+.rx-layout-clean .rx-patient .patient-chip{border:0;border-right:1px solid #e1e6ea;border-radius:0;background:#fff}
+.rx-layout-clean .rx-med{border-bottom-color:color-mix(in srgb,var(--rxp) 35%,#ddd)}
+@media print{#printArea .rx-sheet,#printArea .rx-sheet *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}}
 
 
 /* V3.6.1 — patient-first workspace; prescription print rules are untouched. */

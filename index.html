@@ -6,20 +6,20 @@
   <meta name="theme-color" content="#0f2942">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="Clinovyra">
+  <meta name="apple-mobile-web-app-title" content="Medivorix">
   <meta name="description" content="Expediente clínico y prescripción médica local-first y cifrada">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="apple-touch-icon" href="icons/clinovyra.png">
-  <link rel="icon" href="icons/clinovyra.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/medivorix.png">
+  <link rel="icon" href="icons/medivorix.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="emr.css">
-  <title>Clinovyra · EMR</title>
+  <title>Medivorix · EMR</title>
 </head>
 <body>
   <div id="app" class="app-shell" aria-live="polite">
     <section id="accessView" class="auth-view hidden">
       <div class="auth-card access-card premium-card">
-        <div class="brand-lockup"><img class="brand-symbol" src="icons/clinovyra.png" alt="" width="56" height="56"><div><h1>Clinovyra</h1><p>EMR · Prescripción privada</p></div></div>
+        <div class="brand-lockup"><img class="brand-symbol" src="icons/medivorix.png" alt="" width="56" height="56"><div><h1>Medivorix</h1><p>EMR · Prescripción privada</p></div></div>
         <div class="access-kicker"><span>●</span> ACCESO RESTRINGIDO</div>
         <h2>Identifica tu cuenta</h2>
         <p class="muted">El enlace público no concede acceso. Solo una cuenta incluida en la lista privada de Supabase puede autorizar este dispositivo.</p>
@@ -36,7 +36,7 @@
 
     <section id="setupView" class="auth-view hidden">
       <div class="auth-card premium-card">
-        <div class="brand-lockup"><img class="brand-symbol" src="icons/clinovyra.png" alt="" width="56" height="56"><div><h1>Clinovyra</h1><p>Prescripción privada · local-first</p></div></div>
+        <div class="brand-lockup"><img class="brand-symbol" src="icons/medivorix.png" alt="" width="56" height="56"><div><h1>Medivorix</h1><p>Prescripción privada · local-first</p></div></div>
         <h2>Configura tu bóveda local</h2>
         <p class="muted">Los pacientes y recetas se cifran en este dispositivo. Crea un PIN de al menos 8 dígitos o una contraseña más larga.</p>
         <form id="setupForm" class="stack">
@@ -62,7 +62,7 @@
 
     <section id="unlockView" class="auth-view hidden">
       <div class="auth-card premium-card">
-        <div class="brand-lockup"><img class="brand-symbol" src="icons/clinovyra.png" alt="" width="56" height="56"><div><h1>Clinovyra</h1><p>Bóveda bloqueada</p></div></div>
+        <div class="brand-lockup"><img class="brand-symbol" src="icons/medivorix.png" alt="" width="56" height="56"><div><h1>Medivorix</h1><p>Bóveda bloqueada</p></div></div>
         <form id="unlockForm" class="stack">
           <label>PIN o contraseña<input id="unlockPin" type="password" autocomplete="current-password" required></label>
           <button class="btn primary" type="submit">Desbloquear</button>
@@ -74,14 +74,14 @@
 
     <section id="mainView" class="hidden">
       <header class="topbar">
-        <div class="brand-lockup compact"><img class="brand-symbol small" src="icons/clinovyra.png" alt="" width="40" height="40"><div><strong>Clinovyra</strong><span id="topSubtitle">Inicio</span></div></div>
+        <div class="brand-lockup compact"><img class="brand-symbol small" src="icons/medivorix.png" alt="" width="40" height="40"><div><strong>Medivorix</strong><span id="topSubtitle">Inicio</span></div></div>
         <div class="top-actions"><span id="offlineBadge" class="status-pill">● Local</span><button id="menuBtn" class="icon-btn menu-btn" type="button" aria-label="Abrir navegación" aria-controls="primaryNav" aria-expanded="false">☰</button><button id="lockBtn" class="icon-btn" type="button" aria-label="Bloquear bóveda">⌁</button></div>
       </header>
 
       <main class="content">
         <section id="screen-home" class="screen active">
           <div class="hero-panel">
-            <div class="hero-copy"><span class="eyebrow">CLINOVYRA · CONSULTORIO PERSONAL</span><h2>Tu jornada clínica, en orden.</h2><p>Abre una consulta, consulta el expediente o prepara una receta. Tus borradores y el talonario manual siguen disponibles sin conexión en este dispositivo.</p><div class="hero-private"><span aria-hidden="true">◈</span> Bóveda cifrada en este dispositivo</div></div>
+            <div class="hero-copy"><span class="eyebrow">MEDIVORIX · CONSULTORIO PERSONAL</span><h2>Tu jornada clínica, en orden.</h2><p>Abre una consulta, consulta el expediente o prepara una receta. Tus borradores y el talonario manual siguen disponibles sin conexión en este dispositivo.</p><div class="hero-private"><span aria-hidden="true">◈</span> Bóveda cifrada en este dispositivo</div></div>
             <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota rápida</button></div>
           </div>
           <div class="home-section-heading"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h3>Continúa tu trabajo</h3></div><span>Un acceso por tarea</span></div>
@@ -172,6 +172,7 @@
                 <label class="radio-card"><input type="radio" name="signatureMode" value="profile" checked><span><strong>Firma guardada</strong><small>Usa la firma de tu perfil</small></span></label>
                 <label class="radio-card"><input type="radio" name="signatureMode" value="fresh"><span><strong>Firmar ahora</strong><small>Firma con el dedo antes de emitir</small></span></label>
               </div>
+              <label class="rx-layout-picker">Diseño de la receta<select id="rxLayout"><option value="classic">Clásico · membrete superior</option><option value="side">Acento lateral · clínico</option><option value="clean">Editorial · líneas finas</option></select><small class="label-hint">El diseño y los colores se fijan al emitir. Las recetas previas conservan su formato.</small></label>
               <div id="freshSignatureWrap" class="hidden"><canvas id="rxSignatureCanvas" class="signature-pad" width="900" height="260"></canvas><div class="row-actions"><button id="clearRxSignature" class="btn ghost" type="button">Borrar firma</button></div></div>
             </div>
 
