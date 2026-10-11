@@ -53,6 +53,7 @@ function sanitizeReasoning(input){
   const fields=['symptoms','duration','pertinentNegatives','vitals','history','allergies','medications','renalHepatic','pregnancy','tests'];
   return {schemaVersion:1,locale:'es-MX',mode:'clinical_reasoning',ageLabel:clean(input?.ageLabel,40),sex:clean(input?.sex,20),context:Object.fromEntries(fields.map(key=>[key,clean(input?.context?.[key],key==='symptoms'?3000:1200)]))};
 }
+function containsDirectIdentifier(value){return /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(value)||/\b[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d\b/i.test(value)||/(?:\+?52[\s.-]?)?(?:\d[\s.-]?){10,}/.test(value)}
 function providerError(status){
   if(status===402)return 'Se agotó el crédito disponible para IA. Usa “Estructurar local”; el borrador no fue modificado.';
   if(status===429)return 'La IA alcanzó un límite temporal. Intenta más tarde o usa “Estructurar local”.';
@@ -74,6 +75,7 @@ module.exports=async function handler(req,res){
   const reasoning=input.mode==='clinical_reasoning';
   const sanitized=reasoning?sanitizeReasoning(input):sanitizeInput(input);
   if(reasoning&&!sanitized.context.symptoms)return send(res,400,{error:'Describe los síntomas principales antes de analizar.'});
+  if(reasoning&&Object.values(sanitized.context).some(containsDirectIdentifier))return send(res,400,{error:'Se detectó un posible identificador directo. Elimínalo antes de enviar datos a la IA.'});
   const serialized=JSON.stringify(sanitized);if(serialized.length>30000)return send(res,400,{error:'Entrada demasiado extensa.'});
   try{
     const instructions=reasoning?'Eres apoyo de razonamiento para un MÉDICO en México, no un sistema de diagnóstico autónomo. Usa solo datos aportados, distingue hechos de inferencias y no presupongas exploración, negativos, laboratorios, embarazo, alergias, función renal, tratamientos ni respuesta. Presenta hasta cinco hipótesis diferenciales con justificación, datos en contra y prioridad cualitativa, sin porcentajes inventados. Señala primero urgencias y datos críticos faltantes. Redacta sections solo con hechos documentados; no conviertas hipótesis en diagnóstico confirmado. El plan de estudios y tratamientos son OPCIONES CONDICIONALES para revisión profesional, vinculadas a una hipótesis: explica indicación, contraindicaciones e interacciones a verificar. No propongas dosis individualizada si faltan edad precisa, peso cuando proceda, alergias, embarazo cuando proceda, función renal/hepática o medicación relevante. No atribuyas guías, evidencia ni citas no consultadas; no afirmes verificación en tiempo real. No generes receta ni firma.': 'Eres un asistente de documentación clínica ambulatoria en México. Convierte únicamente hechos aportados por el médico en una nota clara y concisa. No inventes hallazgos normales, negaciones, diagnósticos, códigos CIE-10, tratamientos, dosis ni signos vitales. Conserva incertidumbre y temporalidad. Diagnoses solo puede contener diagnósticos explícitamente documentados. Si falta información médico-legal o hay ambigüedad, déjala vacía y agrega una advertencia breve en reviewWarnings. La salida es un borrador que el médico debe revisar.';

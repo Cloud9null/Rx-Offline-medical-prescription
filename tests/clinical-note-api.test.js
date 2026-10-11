@@ -60,3 +60,12 @@ test('reasoning mode sends only approved clinical context and keeps hypotheses o
     assert.match(res.body,/Sin consulta de guías en tiempo real/);
   }finally{global.fetch=oldFetch;if(oldOpenAI===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldOpenAI}
 });
+
+test('reasoning mode blocks obvious direct identifiers before contacting an AI provider',async()=>{
+  const oldFetch=global.fetch,calls=[];
+  global.fetch=async(url)=>{calls.push(String(url));if(String(url).includes('/auth/v1/user'))return {ok:true,json:async()=>({id:'synthetic-user'})};return {ok:true,json:async()=>[{enabled:true}]}};
+  try{
+    const res=responseCapture();await handler({method:'POST',headers:{authorization:'Bearer synthetic','x-vercel-oidc-token':'synthetic-oidc'},body:{mode:'clinical_reasoning',context:{symptoms:'Dolor de cabeza; correo paciente@example.com'}}},res);
+    assert.equal(res.statusCode,400);assert.match(res.body,/identificador directo/);assert.equal(calls.length,2);
+  }finally{global.fetch=oldFetch}
+});
