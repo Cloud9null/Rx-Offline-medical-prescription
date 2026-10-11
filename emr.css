@@ -77,3 +77,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .record-recent article .btn{min-height:44px;flex:0 0 auto}
 @media(max-width:900px){.record-demographics dl{grid-template-columns:repeat(2,minmax(0,1fr))}#patientRecord .record-head .row-actions{justify-content:flex-start}}
 @media(max-width:600px){.record-demographics dl{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.record-demographics dl>div:last-child,.record-demographics dl>div:nth-last-child(2){grid-column:1/-1}#patientRecord .record-head .row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px}#patientRecord .record-head .row-actions .btn{white-space:normal;text-align:center;padding:8px;min-height:48px}.record-recent article{align-items:flex-start;flex-direction:column}.record-recent article .btn{width:100%}}
+
+/* Keep note actions in the document flow, including above the iOS keyboard. */
+#encounterForm .finalize-bar,
+#encounterDetail .finalize-bar {position:relative;bottom:auto;z-index:1;box-shadow:none;margin-bottom:28px;background:var(--panel)}
