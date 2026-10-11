@@ -102,11 +102,11 @@
           <div id="patientRecord" class="hidden"></div>
           <div class="section-head"><div><span class="eyebrow">EXPEDIENTE CLÍNICO</span><h2>Actividad clínica</h2></div><button id="newEncounterBtn" class="btn primary" type="button">＋ Nueva consulta</button></div>
           <div class="emr-dashboard-grid">
-            <div class="premium-card emr-stat"><small>Borradores</small><strong id="emrDraftMetric">0</strong><span>Guardado automático local</span></div>
-            <div class="premium-card emr-stat"><small>Notas finalizadas</small><strong id="emrFinalMetric">0</strong><span>Snapshot y firma criptográfica</span></div>
-            <div class="premium-card emr-stat"><small>Pacientes activos</small><strong id="emrPatientMetric">0</strong><span>Expediente longitudinal</span></div>
+            <button class="premium-card emr-stat emr-stat-action" data-activity-filter="draft" type="button" aria-label="Ver borradores"><small>Borradores</small><strong id="emrDraftMetric">0</strong><span>Ver notas por continuar →</span></button>
+            <button class="premium-card emr-stat emr-stat-action" data-activity-filter="final" type="button" aria-label="Ver notas finalizadas"><small>Notas finalizadas</small><strong id="emrFinalMetric">0</strong><span>Ver notas firmadas →</span></button>
+            <button class="premium-card emr-stat emr-stat-action" data-activity-filter="patients" type="button" aria-label="Ver pacientes activos"><small>Pacientes activos</small><strong id="emrPatientMetric">0</strong><span>Ir a pacientes →</span></button>
           </div>
-          <div class="toolbar"><input id="emrSearch" class="search" placeholder="Buscar paciente, folio o motivo…"></div>
+          <div class="toolbar"><input id="emrSearch" class="search" placeholder="Buscar paciente, folio o motivo…"><button id="clearActivityFilter" class="btn small ghost hidden" type="button">Todas las notas ✕</button></div>
           <div id="emrActivity" class="timeline-list"></div>
         </section>
 
@@ -152,6 +152,7 @@
             <div class="premium-card">
               <div class="card-title"><span>01</span><h3>Paciente</h3></div>
               <div class="form-grid two">
+                <label>Buscar por nombre o fecha de nacimiento<input id="rxPatientSearch" type="search" autocomplete="off" placeholder="Nombre o AAAA-MM-DD" aria-controls="rxPatient"></label>
                 <label>Paciente registrado<select id="rxPatient" required><option value="">Elige un paciente…</option></select></label>
                 <button id="quickPatientBtn" class="btn secondary align-end" type="button">＋ Nuevo paciente</button>
               </div>
@@ -172,7 +173,7 @@
                 <label class="radio-card"><input type="radio" name="signatureMode" value="profile" checked><span><strong>Firma guardada</strong><small>Usa la firma de tu perfil</small></span></label>
                 <label class="radio-card"><input type="radio" name="signatureMode" value="fresh"><span><strong>Firmar ahora</strong><small>Firma con el dedo antes de emitir</small></span></label>
               </div>
-              <label class="rx-layout-picker">Diseño de la receta<select id="rxLayout"><option value="classic">Clásico · membrete superior</option><option value="side">Acento lateral · clínico</option><option value="clean">Editorial · líneas finas</option></select><small class="label-hint">El diseño y los colores se fijan al emitir. Las recetas previas conservan su formato.</small></label>
+              <label class="rx-layout-picker">Diseño de la receta<select id="rxLayout"><option value="classic">Clásico · membrete superior</option><option value="side">Acento lateral · clínico</option><option value="clean">Editorial · líneas finas</option><option value="folio">Folio · marco fino</option><option value="column">Columna · institucional</option><option value="minimal">Minimal · aire y tipografía</option></select><small class="label-hint">El diseño y los colores se fijan al emitir. Las recetas previas conservan su formato.</small></label>
               <div id="freshSignatureWrap" class="hidden"><canvas id="rxSignatureCanvas" class="signature-pad" width="900" height="260"></canvas><div class="row-actions"><button id="clearRxSignature" class="btn ghost" type="button">Borrar firma</button></div></div>
             </div>
 

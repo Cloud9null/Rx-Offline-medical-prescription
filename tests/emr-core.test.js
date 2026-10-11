@@ -40,10 +40,12 @@ test('canonical JSON is stable across object key order',()=>{
   assert.equal(C.canonicalJson({b:2,a:{d:4,c:3}}),C.canonicalJson({a:{c:3,d:4},b:2}));
 });
 
-test('validates minimum clinical finalization fields',()=>{
+test('allows a documented clinical note with optional fields but rejects an empty one',()=>{
   const note={sections:{reasonForVisit:'Tos',currentIllness:'Tres días',physicalExam:'Alerta',assessment:'IRA probable',plan:'Manejo y vigilancia'}};
   assert.deepEqual(C.validateDraft(note,[{text:'Infección respiratoria aguda'}]),[]);
-  assert.ok(C.validateDraft({sections:{}},[]).length>=6);
+  assert.deepEqual(C.validateDraft({sections:{reasonForVisit:'Valoración a distancia'}},[]),[]);
+  assert.deepEqual(C.validateDraft({sections:{}},[{text:'Lesión ulcerativa'}]),[]);
+  assert.equal(C.validateDraft({sections:{}},[]).length,1);
 });
 
 test('calculates BMI and emits non-blocking plausibility alerts',()=>{

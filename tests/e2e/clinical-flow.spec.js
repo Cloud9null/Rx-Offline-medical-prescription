@@ -369,3 +369,37 @@ test('direct prescription is searchable in the patient record and can seed a lat
   await expect(page.locator(`[data-link-recipe="${rxId}"]`)).toHaveCount(0);
 });
 
+
+test('mobile note actions, official local diagnosis search, filters and patient export',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  page.on('dialog',dialog=>dialog.accept());
+  await page.goto('/?e2e=1');
+  await page.locator('#setupPin').fill('synthetic-mobile-789');await page.locator('#setupPin2').fill('synthetic-mobile-789');
+  await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
+  await page.locator('.mobile-dock [data-nav="settings"]').click();
+  await page.locator('#profileName').fill('Dra. Prueba');await page.locator('#profileLicense').fill('TEST-987');
+  await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
+  await page.locator('.mobile-dock [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
+  await page.locator('#patientName').fill('Paciente Sintético Móvil');await page.locator('#patientDob').fill('2001-02-03');
+  await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
+  await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
+  await page.locator('[data-dx-search]').fill('N18.5');
+  await page.locator('.dx-options button').first().click();
+  await expect(page.locator('[data-dx-text]')).toHaveValue(/renal cronica, etapa 5/i);
+  await page.locator('[data-note-field="reasonForVisit"]').fill('Control clínico sintético');
+  await expect(page.locator('.finalize-bar')).toHaveCSS('position','relative');
+  await page.locator('#finalizeNoteBtn').click();
+  await expect(page.locator('.integrity-badge')).toContainText('Integridad verificada');
+  await page.locator('#backToEmr').click();
+  await page.locator('[data-activity-filter="final"]').click();
+  await expect(page.locator('#emrActivity')).toContainText('Paciente Sintético Móvil');
+  await page.locator('[data-activity-filter="draft"]').click();
+  await expect(page.locator('#emrActivity')).toContainText('No hay consultas');
+  await page.locator('[data-activity-filter="patients"]').click();
+  await expect(page.locator('#screen-patients')).toHaveClass(/active/);
+  await page.locator('[data-record-patient]').first().click();
+  await page.evaluate(()=>{window.ClinovyraPrint.print=async()=>{}});
+  await page.locator('#recordPdf').click();
+  await expect(page.locator('#printArea')).toContainText('Paciente Sintético Móvil');
+  await expect(page.locator('#printArea')).toContainText('Firma digital verificada');
+});

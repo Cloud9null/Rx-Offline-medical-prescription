@@ -106,14 +106,11 @@
   }
 
   function validateDraft(note,diagnoses=[]){
-    const errors=[];
-    if(!cleanText(note?.sections?.reasonForVisit,500))errors.push('Motivo de consulta');
-    if(!cleanText(note?.sections?.currentIllness))errors.push('Padecimiento actual');
-    if(!cleanText(note?.sections?.physicalExam))errors.push('Exploración física');
-    if(!diagnoses.some(d=>cleanText(d.text,500)))errors.push('Al menos un diagnóstico o problema clínico');
-    if(!cleanText(note?.sections?.assessment))errors.push('Razonamiento / impresión clínica');
-    if(!cleanText(note?.sections?.plan))errors.push('Plan e indicaciones');
-    return errors;
+    // La ausencia de un campo no equivale a un hallazgo negativo. Una nota vacía sí
+    // debe permanecer como borrador; el profesional decide qué apartados aplican.
+    const hasClinicalText=Object.values(note?.sections||{}).some(value=>Boolean(cleanText(value)));
+    const hasProblem=diagnoses.some(d=>Boolean(cleanText(d.text,500)));
+    return hasClinicalText||hasProblem?[]:['Documenta al menos un dato clínico antes de firmar'];
   }
 
   function noteSnapshot({encounter,note,patient,profile,diagnoses=[],observations=[],allergies=[],orders=[]}){

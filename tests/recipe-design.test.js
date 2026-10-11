@@ -13,7 +13,7 @@ test('offline QR reconstructs the exact signed design for every new layout',()=>
     vm.runInContext(`function ${name}(${definition}`,context);
   }
   vm.runInContext(verifier.split('function expandPacket(')[1].split('\n')[0].replace(/^/,'function expandPacket('),context);
-  for(const layout of ['classic','side','clean']){
+  for(const layout of ['classic','side','clean','folio','column','minimal']){
     const rec={id:'RX-SYNTHETIC',issuedAt:'2026-10-11T00:00:00Z',doctor:{name:'Dra. Sintética',role:'General',license:'TEST',university:'',address:'',phone:'',email:''},patient:{id:'patient',name:'Paciente sintético',dob:'1990-01-01',age:36,sex:'F',allergies:'',weight:''},medications:[{name:'Sintético',brand:'',strength:'1 mg',dose:'1 mg',route:'Oral',frequency:'Diaria',duration:'1 día',instructions:''}],general:'',signatureImageSha256:'hash',design:{theme:'clinovyra',primary:'#0753b7',secondary:'#12afa8',logoStyle:'monogram',layout},seal:{signature:'synthetic',publicJwk:{x:'x',y:'y'}}};
     context.rec=rec;
     const packet=vm.runInContext('verificationPacket(rec)',context);
