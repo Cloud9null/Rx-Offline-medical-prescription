@@ -42,3 +42,21 @@ test('an authenticated but non-allowlisted account cannot call clinical AI',asyn
     assert.equal(res.statusCode,403);assert.match(res.body,/no autorizada/i);assert.equal(calls.length,2);assert.doesNotMatch(calls.join('\n'),/ai-gateway\.vercel\.sh/);
   }finally{global.fetch=oldFetch}
 });
+
+test('reasoning mode sends only approved clinical context and keeps hypotheses outside signed note',async()=>{
+  const oldFetch=global.fetch,oldOpenAI=process.env.OPENAI_API_KEY;delete process.env.OPENAI_API_KEY;
+  const calls=[];global.fetch=async(url,options={})=>{
+    calls.push({url:String(url),options});
+    if(String(url).includes('/auth/v1/user'))return {ok:true,json:async()=>({id:'synthetic-user'})};
+    if(String(url).includes('/app_authorized_users'))return {ok:true,json:async()=>[{role:'owner',enabled:true}]};
+    const sections=Object.fromEntries(SECTION_KEYS.map(key=>[key,key==='reasonForVisit'?'Dolor abdominal':'']));
+    return {ok:true,json:async()=>({output_text:JSON.stringify({sections,differential:[{name:'Hipótesis para revisar',supporting:'Dolor',against:'Faltan datos',priority:'intermedia'}],urgentFindings:[],missingData:['Signos vitales'],workup:[],treatmentOptions:[{forDiagnosis:'Hipótesis',option:'Valorar según exploración',conditions:'Si se confirma',safety:'Verificar alergias'}],reviewWarnings:[]})})};
+  };
+  try{
+    const res=responseCapture();await handler({method:'POST',headers:{authorization:'Bearer synthetic-session','x-vercel-oidc-token':'synthetic-oidc'},body:{mode:'clinical_reasoning',ageLabel:'adulto',context:{symptoms:'Dolor abdominal',allergies:'Desconocidas'},patientName:'IDENTIFICADOR PRIVADO',patientId:'ID-PRIVADO'}},res);
+    assert.equal(res.statusCode,200,res.body);assert.equal(JSON.parse(res.body).mode,'clinical_reasoning');
+    const req=JSON.parse(calls[2].options.body);assert.equal(req.store,false);assert.equal(req.text.format.name,'clinical_reasoning_draft');assert.match(req.instructions,/No generes receta ni firma/);
+    assert.match(req.input,/Dolor abdominal/);assert.doesNotMatch(req.input,/IDENTIFICADOR PRIVADO|ID-PRIVADO/);
+    assert.match(res.body,/Sin consulta de guías en tiempo real/);
+  }finally{global.fetch=oldFetch;if(oldOpenAI===undefined)delete process.env.OPENAI_API_KEY;else process.env.OPENAI_API_KEY=oldOpenAI}
+});

@@ -82,7 +82,7 @@
         <section id="screen-home" class="screen active">
           <div class="hero-panel">
             <div class="hero-copy"><span class="eyebrow">MEDIVORIX · CONSULTORIO PERSONAL</span><h2>Tu jornada clínica, en orden.</h2><p>Abre una consulta, consulta el expediente o prepara una receta. Tus borradores y el talonario manual siguen disponibles sin conexión en este dispositivo.</p><div class="hero-private"><span aria-hidden="true">◈</span> Bóveda cifrada en este dispositivo</div></div>
-            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota rápida</button></div>
+            <div class="hero-actions"><button id="newEncounterHomeBtn" class="btn primary hero-cta" type="button">＋ Nueva consulta</button><button id="directRxHomeBtn" class="btn secondary hero-cta" type="button">℞ Receta directa</button><button id="quickNoteHomeBtn" class="btn secondary hero-cta" type="button">✦ Nota con IA</button></div>
           </div>
           <div class="home-section-heading"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h3>Continúa tu trabajo</h3></div><span>Un acceso por tarea</span></div>
           <div class="home-task-grid" aria-label="Accesos clínicos"><button type="button" data-nav="patients" class="home-task"><span class="home-task-icon" aria-hidden="true">♙</span><strong>Pacientes</strong><small>Buscar o dar de alta</small></button><button type="button" data-nav="emr" class="home-task"><span class="home-task-icon" aria-hidden="true">▤</span><strong>Expedientes</strong><small>Notas y consultas</small></button><button type="button" data-nav="history" class="home-task"><span class="home-task-icon" aria-hidden="true">◷</span><strong>Recetas emitidas</strong><small>Historial e impresión</small></button></div>
@@ -115,7 +115,7 @@
         </section>
 
         <section id="screen-quicknote" class="screen">
-          <div class="section-head"><div><span class="eyebrow">ESPACIO DE DOCUMENTACIÓN</span><h2>Nota clínica rápida</h2><p class="section-lead">Redacta un borrador independiente sin abrir paciente ni consulta.</p></div><span class="privacy-chip">Sin identificadores</span></div>
+          <div class="section-head"><div><span class="eyebrow">ASISTENCIA CLÍNICA · ÁREA SEPARADA</span><h2>Nota con IA</h2><p class="section-lead">La nota tradicional se captura y firma en Expediente. Aquí preparas un borrador y revisas hipótesis clínicas antes de decidir.</p></div><span class="privacy-chip">Datos desidentificados</span></div>
           <div class="quick-note-layout">
             <form id="quickNoteForm" class="premium-card quick-note-capture">
               <div class="card-title"><span>✦</span><h3>Puntos clínicos</h3></div>
@@ -126,7 +126,14 @@
               </div>
               <label>Puntos clave desidentificados<textarea id="quickNotePoints" rows="12" maxlength="10000" placeholder="MC: dolor abdominal\nPA: inicio hace 8 horas…\nSV: documentados…\nEF: hallazgos observados…\nImpresión: diagnóstico de trabajo…\nPlan: conducta indicada…"></textarea></label>
               <div class="quick-note-safety"><strong>No escribas nombre, fecha de nacimiento, teléfono, domicilio, folio ni otro identificador.</strong><span>El estructurador local no envía datos. La IA externa exige cuenta activa y consentimiento en cada generación.</span></div>
-              <div class="assistant-actions"><button id="quickNoteLocalBtn" class="btn secondary" type="button">Estructurar local</button><label class="ai-consent"><input id="quickNoteConsent" type="checkbox"> Autorizo enviar únicamente estos puntos desidentificados al proveedor de IA</label><button id="quickNoteAiBtn" class="btn primary" type="button">Generar con IA</button></div>
+              <details class="ai-reasoning-input" open><summary>Orientación diagnóstica y terapéutica · datos clínicos</summary><p class="micro">Describe solo los datos observados. La IA puede proponer hipótesis con pocos datos; señalará lo que falta antes de sugerir un tratamiento individualizado.</p>
+                <label>Síntomas principales y evolución<textarea id="aiSymptoms" rows="4" maxlength="3000" placeholder="Síntomas, inicio, localización, intensidad, evolución y hallazgos que sí observaste"></textarea></label>
+                <div class="form-grid two"><label>Duración<input id="aiDuration" maxlength="120" placeholder="Ej. 3 días"></label><label>Negativos pertinentes confirmados<input id="aiNegatives" maxlength="1200" placeholder="Solo lo que interrogaste"></label></div>
+                <label>Signos vitales y exploración disponibles<textarea id="aiVitals" rows="2" maxlength="1200" placeholder="Deja vacío lo no medido"></textarea></label>
+                <div class="form-grid two"><label>Antecedentes / comorbilidades<textarea id="aiHistory" rows="2" maxlength="1200"></textarea></label><label>Alergias conocidas o estado desconocido<input id="aiAllergies" maxlength="1200" placeholder="Ej. alergia a penicilina; desconocido"></label><label>Medicamentos actuales<input id="aiMeds" maxlength="1200"></label><label>Función renal/hepática conocida<input id="aiRenal" maxlength="1200" placeholder="No asumir normalidad"></label><label>Embarazo o lactancia, si aplica<input id="aiPregnancy" maxlength="1200" placeholder="Confirmado, descartado o desconocido"></label><label>Resultados de estudios disponibles<input id="aiTests" maxlength="1200"></label></div>
+                <button id="aiReasoningBtn" class="btn primary full" type="button">Analizar cuadro clínico con IA</button>
+              </details>
+              <div class="assistant-actions"><button id="quickNoteLocalBtn" class="btn secondary" type="button">Estructurar local</button><label class="ai-consent"><input id="quickNoteConsent" type="checkbox"> Autorizo enviar los campos clínicos que completé en esta sección al proveedor de IA, sin identificadores</label><button id="quickNoteAiBtn" class="btn primary" type="button">Generar con IA</button></div>
               <div id="quickNoteStatus" class="inline-status" role="status"></div>
             </form>
             <section class="premium-card quick-note-result" aria-labelledby="quickNoteResultTitle">
@@ -134,6 +141,7 @@
               <textarea id="quickNoteOutput" rows="23" maxlength="30000" aria-label="Borrador de nota clínica" placeholder="Aquí aparecerá la nota estructurada. Revísala y corrige cualquier omisión antes de usarla."></textarea>
               <div class="row-actions wrap quick-note-actions"><button id="quickNoteReadBtn" class="btn secondary" type="button">Modo lectura grande</button><button id="quickNoteCopyBtn" class="btn ghost" type="button">Copiar</button><button id="quickNoteDownloadBtn" class="btn ghost" type="button">Descargar .txt</button><button id="quickNoteShareBtn" class="btn ghost" type="button">Compartir</button><button id="quickNotePrintBtn" class="btn ghost" type="button">Imprimir / PDF</button><button id="quickNoteClearBtn" class="btn danger" type="button">Limpiar</button></div>
               <p class="micro">Borrador temporal: no se incorpora al expediente ni se sincroniza. La valoración, exactitud, consentimiento y firma siguen siendo responsabilidad del profesional.</p>
+              <section id="aiClinicalReview" class="ai-clinical-review" aria-live="polite" hidden></section>
             </section>
           </div>
         </section>

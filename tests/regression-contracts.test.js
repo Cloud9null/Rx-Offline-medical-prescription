@@ -164,6 +164,6 @@ test('night mode is explicit and preserves the last light and dark palettes',()=
 
 test('standalone quick note is temporary, desidentified and uses the authenticated AI endpoint',()=>{
   const source=read('quick-note.js'),html=read('index.html'),css=read('styles.css');
-  assert.match(html,/id="screen-quicknote"/);assert.match(html,/Sin identificadores/);assert.match(source,/RxClinicalAssistant\.buildAiPayload/);assert.match(source,/Authorization:`Bearer \$\{token\}`/);assert.match(source,/onLock/);
+  assert.match(html,/id="screen-quicknote"/);assert.match(html,/No escribas nombre, fecha de nacimiento/);assert.match(source,/RxClinicalAssistant\.buildAiPayload/);assert.match(source,/Authorization:`Bearer \$\{token\}`/);assert.match(source,/onLock/);
   assert.doesNotMatch(source,/localStorage|sessionStorage|indexedDB/);assert.match(css,/printing-quick-note/);assert.match(html,/Modo lectura grande/);
 });

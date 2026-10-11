@@ -81,3 +81,5 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 /* Keep note actions in the document flow, including above the iOS keyboard. */
 #encounterForm .finalize-bar,
 #encounterDetail .finalize-bar {position:relative;bottom:auto;z-index:1;box-shadow:none;margin-bottom:28px;background:var(--panel)}
+
+.diagnosis-row .dx-edition-label{grid-column:1/-1}.dx-options button[disabled]{opacity:.6;cursor:default}.dx-edition-label select{min-height:48px}

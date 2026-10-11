@@ -122,7 +122,7 @@
       author:{name:profile.name||'',role:profile.role||'',license:profile.license||''},
       facility:{type:profile.facilityType||'',name:profile.facilityName||'Consultorio médico',address:profile.address||''},
       sections:stable(note.sections||{}),
-      diagnoses:diagnoses.map(d=>({id:d.id,code:d.code||'',text:d.text||'',status:d.status||'working'})),
+      diagnoses:diagnoses.map(d=>({id:d.id,code:d.code||'',codingSystem:d.codingSystem||'CIE-10-MX-2025',text:d.text||'',status:d.status||'working'})),
       observations:observations.map(o=>stable(o)),
       allergies:allergies.map(a=>({substance:a.substance||'',reaction:a.reaction||'',severity:a.severity||'',status:a.status||'active'})),
       orders:orders.map(o=>({id:o.id,name:o.name||'',status:o.status||'ordered',result:o.result||'',resultedAt:o.resultedAt||''}))

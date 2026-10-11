@@ -308,6 +308,7 @@ test('Safari-style biometric enrollment uses a fresh gesture for the second WebA
 test('standalone quick note structures locally and remains outside the patient record',async({page})=>{
   await page.goto('/?e2e=1');await page.locator('#setupPin').fill('synthetic-quick-note-123');await page.locator('#setupPin2').fill('synthetic-quick-note-123');await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
   await page.locator('#quickNoteHomeBtn').click();await expect(page.locator('#screen-quicknote')).toHaveClass(/active/);
+  await expect(page.locator('#aiReasoningBtn')).toBeVisible();await expect(page.locator('#aiClinicalReview')).toBeHidden();
   await page.locator('#quickNotePoints').fill('MC: Dolor lumbar\nPA: Inicio después de esfuerzo\nEF: Dolor documentado a la palpación\nImpresión: Lumbalgia mecánica en estudio\nPlan: Revaloración y medidas documentadas');
   await page.locator('#quickNoteLocalBtn').click();await expect(page.locator('#quickNoteOutput')).toHaveValue(/MOTIVO DE CONSULTA[\s\S]*Dolor lumbar[\s\S]*BORRADOR CLÍNICO/);
   await expect(page.locator('#patientCount')).toHaveText('0');await expect(page.locator('#encounterCount')).toHaveText('0');
@@ -386,10 +387,15 @@ test('mobile note actions, official local diagnosis search, filters and patient 
   await page.locator('[data-dx-search]').fill('N18.5');
   await page.locator('.dx-options button').first().click();
   await expect(page.locator('[data-dx-text]')).toHaveValue(/renal cronica, etapa 5/i);
+  await page.locator('[data-dx-edition]').selectOption('es');
+  await page.locator('[data-dx-search]').fill('A01.00');
+  await page.locator('.dx-options button[data-code="A01.00"]').click();
+  await expect(page.locator('[data-dx-text]')).toHaveValue(/Fiebre tifoidea, no especificada/i);
   await page.locator('[data-note-field="reasonForVisit"]').fill('Control clínico sintético');
   await expect(page.locator('.finalize-bar')).toHaveCSS('position','relative');
   await page.locator('#finalizeNoteBtn').click();
   await expect(page.locator('.integrity-badge')).toContainText('Integridad verificada');
+  await expect(page.locator('#printableClinicalNote')).toContainText('CIE-10-ES 2026');
   await page.locator('#backToEmr').click();
   await page.locator('[data-activity-filter="final"]').click();
   await expect(page.locator('#emrActivity')).toContainText('Paciente Sintético Móvil');
