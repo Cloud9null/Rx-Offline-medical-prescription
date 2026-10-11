@@ -147,11 +147,12 @@
 
         <section id="screen-rx" class="screen">
           <div class="section-head"><div><span class="eyebrow">NUEVA PRESCRIPCIÓN</span><h2>Emitir receta</h2></div><button id="resetRxBtn" class="btn ghost" type="button">Limpiar</button></div>
+          <p class="rx-flow-hint">Selecciona al paciente, escribe los medicamentos y revisa la firma. Al emitir, la receta se guarda y se abre lista para compartir o imprimir.</p>
           <form id="rxForm" class="stack-lg">
             <div class="premium-card">
               <div class="card-title"><span>01</span><h3>Paciente</h3></div>
               <div class="form-grid two">
-                <label>Paciente registrado<select id="rxPatient" required><option value="">Seleccionar…</option></select></label>
+                <label>Paciente registrado<select id="rxPatient" required><option value="">Elige un paciente…</option></select></label>
                 <button id="quickPatientBtn" class="btn secondary align-end" type="button">＋ Nuevo paciente</button>
               </div>
               <div id="selectedPatientSummary" class="patient-summary muted">Selecciona un paciente.</div>
@@ -159,14 +160,14 @@
             </div>
 
             <div class="premium-card">
-              <div class="card-title"><span>02</span><h3>Prescripción</h3></div>
+              <div class="card-title"><span>02</span><h3>Medicamentos e indicaciones</h3></div>
               <div id="medicationList" class="stack"></div>
               <button id="addMedBtn" class="btn secondary full" type="button">＋ Agregar medicamento</button>
               <label class="top-gap">Indicaciones generales<textarea id="rxGeneral" rows="3" placeholder="Recomendaciones, signos de alarma, seguimiento…"></textarea></label>
             </div>
 
             <div class="premium-card">
-              <div class="card-title"><span>03</span><h3>Firma</h3></div>
+              <div class="card-title"><span>03</span><h3>Firma y revisión</h3></div>
               <div class="signature-choice">
                 <label class="radio-card"><input type="radio" name="signatureMode" value="profile" checked><span><strong>Firma guardada</strong><small>Usa la firma de tu perfil</small></span></label>
                 <label class="radio-card"><input type="radio" name="signatureMode" value="fresh"><span><strong>Firmar ahora</strong><small>Firma con el dedo antes de emitir</small></span></label>
@@ -174,7 +175,7 @@
               <div id="freshSignatureWrap" class="hidden"><canvas id="rxSignatureCanvas" class="signature-pad" width="900" height="260"></canvas><div class="row-actions"><button id="clearRxSignature" class="btn ghost" type="button">Borrar firma</button></div></div>
             </div>
 
-            <div class="emit-bar"><div><strong>Receta media carta horizontal</strong><small>8.5 × 5.5 pulgadas · PDF mediante impresión del sistema</small></div><button class="btn primary" type="submit">Emitir y sellar</button></div>
+            <div class="emit-bar"><div><strong>Revisa antes de emitir</strong><small>Formato media carta 8.5 × 5.5 pulgadas. Después podrás imprimir o guardar y compartir el PDF.</small></div><button class="btn primary" type="submit">Revisar receta</button></div>
             <div id="rxMsg" class="inline-status"></div>
           </form>
         </section>

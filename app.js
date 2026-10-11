@@ -536,10 +536,11 @@ async function openRecipe(id){
   const rec=state.vault.recipes.find(r=>r.id===id);if(!rec)return;
   await ensureVerificationToken(rec);
   const ok=await verifyRecipeFixed(rec),d=$('#recipeDetail');d.classList.remove('hidden');
-  d.innerHTML=`<div class="recipe-detail-card"><div class="recipe-detail-head"><div><span class="eyebrow">${esc(rec.id)}</span><h3 style="margin:5px 0">${esc(rec.patient.name)}</h3><div class="${ok?'seal-ok':'seal-void'}">${ok?'✓ Integridad local verificada':'⚠ El sello local no coincide'}</div></div><button class="icon-btn" type="button" id="closeRecipeDetail">×</button></div><div class="rx-preview-shell">${renderRxSheet(rec)}</div><div class="row-actions wrap"><button id="printRecipeBtn" class="btn primary" type="button">Imprimir / Guardar PDF</button><button id="openRecipePatientBtn" class="btn secondary" type="button">Abrir expediente del paciente</button><button id="duplicateRecipeBtn" class="btn secondary" type="button">Duplicar como nueva</button>${rec.status!=='void'?'<button id="voidRecipeBtn" class="btn danger" type="button">Anular receta</button>':''}</div><p class="micro">El QR de autenticidad abre un verificador público y muestra exactamente el contenido firmado al emitir. Si el PDF es alterado, la firma ya no coincidirá con ese contenido.</p></div>`;
+  d.innerHTML=`<div class="recipe-detail-card"><div class="recipe-detail-head"><div><span class="eyebrow">${esc(rec.id)}</span><h3 style="margin:5px 0">${esc(rec.patient.name)}</h3><div class="${ok?'seal-ok':'seal-void'}">${ok?'✓ Integridad local verificada':'⚠ El sello local no coincide'}</div></div><button class="icon-btn" type="button" id="closeRecipeDetail" aria-label="Cerrar receta">×</button></div><div class="recipe-ready-actions"><strong>Receta emitida y guardada</strong><p>Ábrela para imprimir o guardar en Archivos. En iPhone, usa la vista previa de impresión y el botón Compartir para enviar el PDF al paciente.</p><button id="printRecipeBtnTop" class="btn primary" type="button">Imprimir / Guardar PDF</button><p id="recipePrintStatus" class="micro" role="status" aria-live="polite">La impresión todavía no se ha solicitado.</p></div><div class="rx-preview-shell">${renderRxSheet(rec)}</div><div class="row-actions wrap"><button id="printRecipeBtn" class="btn primary" type="button">Imprimir / Guardar PDF</button><button id="openRecipePatientBtn" class="btn secondary" type="button">Abrir expediente del paciente</button><button id="duplicateRecipeBtn" class="btn secondary" type="button">Duplicar como nueva</button>${rec.status!=='void'?'<button id="voidRecipeBtn" class="btn danger" type="button">Anular receta</button>':''}</div><p class="micro">El QR de autenticidad abre un verificador público y muestra exactamente el contenido firmado al emitir. Si el PDF es alterado, la firma ya no coincidirá con ese contenido.</p></div>`;
   d.scrollIntoView({behavior:'smooth',block:'start'});
   $('#closeRecipeDetail').addEventListener('click',()=>d.classList.add('hidden'));
   $('#printRecipeBtn').addEventListener('click',()=>printRecipe(rec));
+  $('#printRecipeBtnTop').addEventListener('click',()=>printRecipe(rec));
   $('#openRecipePatientBtn').addEventListener('click',()=>window.RxEMR?.openPatientRecord(rec.patient.id));
   $('#duplicateRecipeBtn').addEventListener('click',()=>duplicateRecipe(rec));
   $('#voidRecipeBtn')?.addEventListener('click',()=>voidRecipe(rec));
@@ -640,7 +641,19 @@ async function printManualTemplate(){
 function activeManualPdf(){const batch=(state.vault.manualPrintLog||[]).find(b=>b.batchId===state.manualActiveBatchId&&!b.archivedAt);if(!batch||!state.manualPdfBlob||state.manualPdfBatchId!==batch.batchId)throw new Error('Prepara primero el PDF de este lote.');return {batch,blob:state.manualPdfBlob}}
 function openManualPdf(){try{const {batch,blob}=activeManualPdf(),url=URL.createObjectURL(blob),win=window.open(url,'_blank');if(!win){const a=document.createElement('a');a.href=url;a.download=`Clinovyra-${batch.batchId}.pdf`;document.body.appendChild(a);a.click();a.remove();toast('iOS bloqueó la pestaña; revisa la descarga de PDF.')}else toast('PDF abierto. Usa Compartir → Imprimir o Guardar en Archivos.');setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(err){toast(`No se pudo abrir el PDF: ${err.message}`)}}
 async function shareManualPdf(){try{const {batch,blob}=activeManualPdf(),file=new File([blob],`Clinovyra-${batch.batchId}.pdf`,{type:'application/pdf'});if(!navigator.canShare?.({files:[file]}))return openManualPdf();await navigator.share({files:[file],title:'Talonario Clinovyra'});}catch(err){if(err.name!=='AbortError')toast(`No se pudo compartir el PDF: ${err.message}`)}}
-function printRecipe(rec){clearManualPrintMode();$('#printArea').innerHTML=renderRxSheet(rec);try{Promise.resolve(window.ClinovyraPrint.print(`Clinovyra - ${rec.id}`)).catch(e=>toast(e.message))}catch(e){toast(e.message)}}
+async function printRecipe(rec){
+  clearManualPrintMode();
+  $('#printArea').innerHTML=renderRxSheet(rec);
+  const status=$('#recipePrintStatus');
+  if(status)status.textContent='Abriendo opciones de impresión…';
+  try{
+    await window.ClinovyraPrint.print(`Clinovyra - ${rec.id}`);
+    if(status)status.textContent='Opciones de impresión solicitadas. Guarda o comparte desde la hoja del sistema y comprueba el archivo en Archivos o en la app de destino. Puedes reintentar con esta misma receta.';
+  }catch(error){
+    if(status)status.textContent=`No se abrieron las opciones de impresión: ${error.message}. La receta sigue guardada; vuelve a intentarlo con el mismo folio.`;
+    toast(error.message);
+  }
+}
 function duplicateRecipe(rec){navigate('rx');$('#rxPatient').value=rec.patient.id;updateSelectedPatient();$('#rxGeneral').value=rec.general||'';$('#medicationList').innerHTML='';state.medSeq=0;rec.medications.forEach(m=>addMedication(m));toast('Receta copiada como borrador nuevo')}
 async function voidRecipe(rec){const reason=prompt('Motivo breve de anulación (opcional):','');if(reason===null)return;rec.status='void';rec.voidedAt=new Date().toISOString();rec.voidReason=reason.trim();await saveVault();renderHistory();queueCloudSync();toast('Receta anulada; el registro original se conserva')}
 function renderRecoveryState(){const enabled=!!state.vault?.settings?.recovery?.enabled,button=$('#enableRecoveryBtn'),status=$('#recoveryStatus');if(button)button.textContent=enabled?'Generar nuevo código':'Configurar recuperación';if(status)status.textContent=enabled?'Recuperación cifrada activa. El código no se guarda en este dispositivo; consérvalo fuera de línea.':'Todavía no configurada. Sin el respaldo o código, una bóveda perdida no puede recuperarse.'}

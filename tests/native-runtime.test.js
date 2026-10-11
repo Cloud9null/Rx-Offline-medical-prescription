@@ -6,6 +6,7 @@ const model=require('../emr-core.js');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
+const {pathToFileURL}=require('node:url');
 
 function capture(){return {headers:{},setHeader(k,v){this.headers[k]=v},end(value){this.body=value}}}
 
@@ -90,4 +91,43 @@ test('native printing uses the system printer and the web keeps its print dialog
   const native={Capacitor:{isNativePlatform:()=>true,registerPlugin(id){assert.equal(id,'Printer');return {printWebView:async options=>{name=options.name}}}},print(){throw new Error('unexpected browser print')}};
   vm.runInNewContext(source,{window:native});await native.ClinovyraPrint.print('Receta manual');assert.equal(name,'Receta manual');
   const web={print(){webCalls++}};vm.runInNewContext(source,{window:web});await web.ClinovyraPrint.print('Receta manual');assert.equal(webCalls,1);
+});
+
+test('packaged iPhone loads Capacitor JS before print and Face ID; both reach native plugins',async()=>{
+  const nativeDir=path.join(__dirname,'../native');
+  await import(pathToFileURL(path.join(nativeDir,'build-web.mjs')).href);
+  const html=fs.readFileSync(path.join(nativeDir,'www/index.html'),'utf8');
+  const scriptNames=['capacitor-core.js','runtime.js','native-print.js','native-biometric.js'];
+  let previous=-1;
+  for(const name of scriptNames){
+    const position=html.indexOf(`<script src="${name}"></script>`);
+    assert.ok(position>previous,`${name} must follow the previous native script`);
+    previous=position;
+  }
+  const calls=[];
+  const context={console,Capacitor:{
+    PluginHeaders:[
+      {name:'Printer',methods:[{name:'printWebView',rtype:'promise'}]},
+      {name:'NativeBiometric',methods:['isAvailable','setCredentials','getSecureCredentials','deleteCredentials'].map(name=>({name,rtype:'promise'}))}
+    ],
+    nativePromise:async(name,method,options)=>{
+      calls.push([name,method,options]);
+      if(method==='isAvailable')return {isAvailable:true,strongBiometryIsAvailable:true};
+      if(method==='getSecureCredentials')return {username:'synthetic-vault',password:'synthetic-key'};
+    }
+  },webkit:{messageHandlers:{bridge:{}}}};
+  context.window=context;
+  vm.createContext(context);
+  for(const name of ['capacitor-core.js','native-print.js','native-biometric.js'])
+    vm.runInContext(fs.readFileSync(path.join(nativeDir,'www',name),'utf8'),context,{filename:name});
+  assert.equal(context.Capacitor.getPlatform(),'ios');
+  assert.equal(await context.ClinovyraBiometric.available(),true);
+  await context.ClinovyraBiometric.protect('synthetic','synthetic-vault','synthetic-key');
+  assert.equal((await context.ClinovyraBiometric.release('synthetic')).password,'synthetic-key');
+  await context.ClinovyraPrint.print('RX-SYNTHETIC');
+  assert.deepEqual(calls.map(([name,method])=>[name,method]),[
+    ['NativeBiometric','isAvailable'],['NativeBiometric','setCredentials'],
+    ['NativeBiometric','getSecureCredentials'],['Printer','printWebView']
+  ]);
+  assert.equal(calls.at(-1)[2].name,'RX-SYNTHETIC');
 });
