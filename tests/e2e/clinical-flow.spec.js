@@ -376,7 +376,7 @@ test('mobile note actions, official local diagnosis search, filters and patient 
   await page.goto('/?e2e=1');
   await page.locator('#setupPin').fill('synthetic-mobile-789');await page.locator('#setupPin2').fill('synthetic-mobile-789');
   await page.getByRole('button',{name:'Crear bóveda cifrada'}).click();
-  await page.locator('.mobile-dock [data-nav="settings"]').click();
+  await page.locator('#dockMoreBtn').click();await page.locator('.bottom-nav [data-nav="settings"]').click();
   await page.locator('#profileName').fill('Dra. Prueba');await page.locator('#profileLicense').fill('TEST-987');
   await page.locator('#profileForm').getByRole('button',{name:'Guardar perfil'}).click();
   await page.locator('.mobile-dock [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
