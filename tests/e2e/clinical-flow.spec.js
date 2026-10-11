@@ -146,7 +146,7 @@ test('iPhone-sized preview fits and a blocked PDF window triggers download witho
   await page.locator('#printManualTemplateBtn').click();
   await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
   const download=page.waitForEvent('download');
-  await page.locator('#openManualPdfBtn').click();expect((await download).suggestedFilename()).toMatch(/Clinovyra-BATCH-.*\.pdf/);
+  await page.locator('#openManualPdfBtn').click();expect((await download).suggestedFilename()).toMatch(/Medivorix-BATCH-.*\.pdf/);
   await page.locator('#printManualTemplateBtn').click();
   await expect(page.locator('#manualBatchHistory .manual-batch-row')).toHaveCount(1);
 });
