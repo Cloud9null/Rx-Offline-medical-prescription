@@ -44,7 +44,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 
   await page.locator('#rxFromNoteBtn').click();
   await page.locator('.m-name').fill('Paracetamol');await page.locator('.m-strength').fill('500 mg tabletas');await page.locator('.m-dose').fill('500 mg');await page.locator('.m-frequency').fill('Cada 8 horas si dolor o fiebre');await page.locator('.m-duration').fill('3 días');
-  await page.locator('#rxForm').getByRole('button',{name:'Emitir y sellar'}).click();await expect(page.locator('#confirmDialog')).toBeVisible();await page.locator('#confirmEmitBtn').click();
+  await page.locator('#rxForm').getByRole('button',{name:'Revisar receta'}).click();await expect(page.locator('#confirmDialog')).toBeVisible();await page.locator('#confirmEmitBtn').click();
   await expect(page.locator('#recipeDetail')).toContainText('Integridad local verificada');
 
   await page.locator('.bottom-nav [data-nav="emr"]').click();await page.locator('[data-open-record]').click();
@@ -311,7 +311,7 @@ test('direct prescription is searchable in the patient record and can seed a lat
   await page.locator('.m-dose').fill('400 mg');
   await page.locator('.m-frequency').fill('Cada 8 horas con alimentos');
   await page.locator('.m-duration').fill('3 días');
-  await page.locator('#rxForm').getByRole('button',{name:'Emitir y sellar'}).click();
+  await page.locator('#rxForm').getByRole('button',{name:'Revisar receta'}).click();
   await page.locator('#confirmEmitBtn').click();
   await expect(page.locator('#recipeDetail')).toContainText('Integridad local verificada');
   const rxId=(await page.locator('.recipe-detail-head .eyebrow').textContent()).trim();
