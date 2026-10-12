@@ -20,7 +20,7 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await expect(page.locator('#toast')).toContainText('Firma guardada localmente');
 
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
-  await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');await page.locator('#patientAddress').fill('Domicilio sintético 123');
+  await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');await page.locator('.patient-intake-extra summary').click();await page.locator('#patientAddress').fill('Domicilio sintético 123');
   await page.locator('#patientAllergyStatus').selectOption('none_reported');
   await page.locator('#patientPathologicalHistory').fill('Antecedente sintético documentado');
   await page.locator('#patientNonPathologicalHistory').fill('Actividad física declarada');
