@@ -28,18 +28,20 @@
     const documented=Object.fromEntries(SECTION_KEYS.map(k=>[k,clean(sections[k]).slice(0,4000)]));
     return {schemaVersion:1,locale:'es-MX',noteType:String(context.noteType||'ambulatory').slice(0,40),ageLabel:String(context.ageLabel||'').slice(0,40),sex:String(context.sex||'').slice(0,20),keyPoints:clean(points).slice(0,10000),documented};
   }
-  function plainText({patient={},encounter={},note={},profile={},diagnoses=[],observation={},orders=[],includeIdentifiers=true}){
+  function plainText({patient={},encounter={},note={},profile={},facility={},diagnoses=[],observation={},orders=[],includeIdentifiers=true}){
     const s=note.finalSnapshot?.sections||note.sections||{},lines=[];
     lines.push('NOTA MÉDICA AMBULATORIA');
     if(profile.name)lines.push(`Médico: ${profile.name}${profile.license?` | Cédula: ${profile.license}`:''}`);
+    if(facility.name||facility.type||facility.address)lines.push(`Establecimiento: ${[facility.type,facility.name,facility.address].filter(Boolean).join(' | ')}`);
     if(includeIdentifiers&&patient.name)lines.push(`Paciente: ${patient.name}${patient.dob?` | Fecha de nacimiento: ${patient.dob}`:''}${patient.sex?` | Sexo: ${patient.sex}`:''}`);
     if(encounter.folio)lines.push(`Folio: ${encounter.folio}`);if(encounter.occurredAt)lines.push(`Fecha y hora: ${new Date(encounter.occurredAt).toLocaleString('es-MX')}`);lines.push('');
     const blocks=[['MOTIVO DE CONSULTA',s.reasonForVisit],['PADECIMIENTO ACTUAL',s.currentIllness],['REVISIÓN POR SISTEMAS',s.reviewOfSystems],['EXPLORACIÓN FÍSICA',s.physicalExam],['RESULTADOS RELEVANTES',s.relevantResults],['RAZONAMIENTO / IMPRESIÓN CLÍNICA',s.assessment],['PLAN DIAGNÓSTICO',s.diagnosticPlan],['TRATAMIENTO E INDICACIONES',s.plan],['PRONÓSTICO',s.prognosis],['SIGNOS DE ALARMA',s.warningSigns],['SEGUIMIENTO',s.followUp],['REFERENCIA / INTERCONSULTA',s.referral]];
     const vitals=[['TA',observation.sbp&&observation.dbp?`${observation.sbp}/${observation.dbp} mmHg`:''],['FC',observation.hr?`${observation.hr} lpm`:'' ],['FR',observation.rr?`${observation.rr} rpm`:'' ],['Temperatura',observation.temperature?`${observation.temperature} °C`:'' ],['SpO₂',observation.spo2?`${observation.spo2}%`:'' ],['Peso',observation.weight?`${observation.weight} kg`:'' ],['Talla',observation.height?`${observation.height} cm`:'' ],['IMC',observation.bmi??''],['Dolor',observation.pain!==''&&observation.pain!=null?`${observation.pain}/10`:'']].filter(x=>x[1]).map(x=>`${x[0]}: ${x[1]}`).join(' | ');
-    if(vitals)blocks.splice(3,0,['SIGNOS VITALES',vitals]);if(diagnoses.length)blocks.splice(6,0,['DIAGNÓSTICOS / PROBLEMAS',diagnoses.map(d=>`${d.code?d.code+' - ':''}${d.text||''}${d.status?` (${d.status})`:''}`).join('\n')]);if(orders.length)blocks.splice(6,0,['ÓRDENES / RESULTADOS',orders.map(o=>`${o.name}${o.result?`: ${o.result}`:''}`).join('\n')]);
+    if(vitals)blocks.splice(3,0,['SIGNOS VITALES',vitals]);if(diagnoses.length)blocks.splice(6,0,['DIAGNÓSTICOS / PROBLEMAS',diagnoses.map(d=>`${d.code?d.code+' - ':''}${d.text||''}${d.code&&d.codingSystem==='CIE-10-ES-2026'?' [CIE-10-ES 2026]':''}${d.status?` (${d.status})`:''}`).join('\n')]);if(orders.length)blocks.splice(6,0,['ÓRDENES / RESULTADOS',orders.map(o=>`${o.name}${o.result?`: ${o.result}`:''}`).join('\n')]);
     for(const [title,value] of blocks)if(clean(value)){lines.push(title);lines.push(clean(value));lines.push('')}
     if(note.status==='final'&&note.seal){lines.push(`Finalizada: ${note.seal.signedAt||note.finalizedAt||''}`);lines.push(`SHA-256: ${note.seal.hash||''}`);lines.push('Documento firmado criptográficamente por la aplicación; requiere validación clínica y no equivale automáticamente a e.firma/FIEL.');}
     return lines.join('\n').trim();
   }
   return {SECTION_KEYS,structureLocal,mergeSuggestions,buildAiPayload,plainText};
 });
+

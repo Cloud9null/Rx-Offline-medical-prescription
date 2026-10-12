@@ -5,6 +5,7 @@ const SESSION_KEY='rxOfflineSupabaseSessionV1';
 const PRIVATE_BUCKET='rx-emr-private-v1';
 let currentUser=null;
 let session=null;
+let refreshInFlight=null;
 function configured(){return /^https:\/\/.+\.supabase\.co$/i.test(String(cfg.url||''))&&String(cfg.publishableKey||'').length>20&&!String(cfg.publishableKey).includes('PASTE_')}
 function base(){return String(cfg.url||'').replace(/\/$/,'')}
 function emitAuth(){window.dispatchEvent(new CustomEvent('rx-cloud-auth',{detail:{user:currentUser}}))}
@@ -13,10 +14,14 @@ function saveSession(s){session=s||null;currentUser=s?.user||null;try{if(s)local
 function apiHeaders(accessToken=null,extra={}){const h={'apikey':cfg.publishableKey,'Accept':'application/json',...extra};if(accessToken)h.Authorization='Bearer '+accessToken;return h}
 async function parseResponse(r){const text=await r.text();let body=null;if(text){try{body=JSON.parse(text)}catch{body=text}}if(!r.ok){const detail=body?.details||body?.hint||body?.message||body?.msg||body?.error_description||body?.error||`HTTP ${r.status}`;const code=body?.code?` [${body.code}]`:'';const e=new Error(`${detail}${code}`);e.status=r.status;e.body=body;throw e}return body}
 async function request(url,options={}){try{return await parseResponse(await fetch(url,options))}catch(err){if(err instanceof TypeError){let endpoint='Supabase';try{endpoint=new URL(url).pathname}catch{}throw new Error(`No se pudo alcanzar ${endpoint}. La bóveda local sigue funcionando.`)}throw err}}
-async function refreshSession(){if(!session?.refresh_token)throw new Error('La sesión de Supabase expiró. Inicia sesión otra vez.');const data=await request(base()+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:apiHeaders(null,{'Content-Type':'application/json'}),body:JSON.stringify({refresh_token:session.refresh_token})});const next={...data,expires_at:Date.now()+Number(data.expires_in||3600)*1000};saveSession(next);return next}
+function refreshSession(){
+  if(refreshInFlight)return refreshInFlight;
+  const job=(async()=>{if(!session?.refresh_token)throw new Error('La sesión de Supabase expiró. Inicia sesión otra vez.');const data=await request(base()+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:apiHeaders(null,{'Content-Type':'application/json'}),body:JSON.stringify({refresh_token:session.refresh_token})});const next={...data,expires_at:Date.now()+Number(data.expires_in||3600)*1000};saveSession(next);return next})();
+  refreshInFlight=job;job.finally(()=>{if(refreshInFlight===job)refreshInFlight=null}).catch(()=>{});return job;
+}
 async function ensureSession(){if(!session)session=loadStoredSession();if(!session)return null;currentUser=session.user||currentUser;const exp=Number(session.expires_at||0);if(exp&&Date.now()>exp-60000){try{await refreshSession()}catch(err){if(!navigator.onLine)return session;saveSession(null);throw err}}return session}
 async function accessToken(){const s=await ensureSession();return s?.access_token||null}
-async function authUser(){const token=await accessToken();if(!token)return null;try{const u=await request(base()+'/auth/v1/user',{headers:apiHeaders(token)});currentUser=u||null;if(session&&u){session.user=u;saveSession(session)}return currentUser}catch(err){if(err.status===401&&session?.refresh_token){await refreshSession();return authUser()}throw err}}
+async function authUser(retried=false){const token=await accessToken();if(!token)return null;try{const u=await request(base()+'/auth/v1/user',{headers:apiHeaders(token)});currentUser=u||null;if(session&&u){session.user=u;saveSession(session)}return currentUser}catch(err){if(!retried&&err.status===401&&session?.refresh_token){if(session.access_token===token)await refreshSession();return authUser(true)}throw err}}
 async function init(){if(!configured())return {configured:false,user:null};session=loadStoredSession();currentUser=session?.user||null;if(session&&navigator.onLine){try{await authUser()}catch(err){console.warn('Supabase session:',err.message)}}return {configured:true,user:currentUser}}
 async function signIn(email,password){if(!configured())throw new Error('Supabase todavía no está configurado.');const data=await request(base()+'/auth/v1/token?grant_type=password',{method:'POST',headers:apiHeaders(null,{'Content-Type':'application/json'}),body:JSON.stringify({email,password})});if(!data?.access_token)throw new Error('Supabase no devolvió una sesión válida.');data.expires_at=Date.now()+Number(data.expires_in||3600)*1000;saveSession(data);return currentUser}
 async function signOut(scope='local'){
@@ -90,21 +95,22 @@ async function syncEmr(vault){
   catch(err){setEmrQueue(vault,'error',err.message||String(err));if(err.status===404||/emr_sync_bundle|function.*not found|PGRST202/i.test(err.message||''))return {available:false,migrationRequired:true};throw err}
 }
 function isEmptyLocalVault(vault){return !(vault.profile?.name||vault.profile?.license)&&(vault.patients||[]).length===0&&(vault.recipes||[]).length===0}
-async function bootstrapRemoteVault(vault){
+async function bootstrapRemoteVault(vault,{mergeProfile=true}={}){
   const token=await accessToken();if(!token)throw new Error('Authentication required');
   const headers=apiHeaders(token),[profiles,patients,recipes]=await Promise.all([
     request(base()+'/rest/v1/profiles?select=profile,updated_at&limit=1',{headers}),
     request(base()+'/rest/v1/patients?select=payload,updated_at&order=updated_at.desc',{headers}),
     request(base()+'/rest/v1/prescriptions?select=payload,updated_at&order=updated_at.desc',{headers})
   ]);
-  mergeBundle(vault,{profile:profiles?.[0]?.profile||null,patients:(patients||[]).map(x=>x.payload),recipes:(recipes||[]).map(x=>x.payload)});
+  mergeBundle(vault,{profile:mergeProfile?(profiles?.[0]?.profile||null):null,patients:(patients||[]).map(x=>x.payload),recipes:(recipes||[]).map(x=>x.payload)});
 }
 async function healthcheck(){const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');const data=await rpc('rx_cloud_healthcheck',{},true);if(!data?.ok)throw new Error('El backend respondió, pero la sesión no quedó autenticada.');return data}
 async function syncVault(vault,canonicalFactory){
   if(!navigator.onLine)throw new Error('Sin conexión. Los cambios permanecen en la bóveda local.');
   const u=await user();if(!u)throw new Error('Inicia sesión en Supabase primero.');
   try{await healthcheck()}catch(err){throw new Error(`Backend Supabase: ${err.message}. Si ves “function not found”, ejecuta FINAL_REPAIR_AND_SYNC_V2_3_4.sql en SQL Editor.`)}
-  if(isEmptyLocalVault(vault)){try{await bootstrapRemoteVault(vault)}catch(err){throw new Error(`Protección de restauración: no se pudo leer la nube antes de escribir (${err.message}). No se envió una bóveda vacía.`)}}
+  // Even if the physician filled in a new profile, recover remote clinical records before the first write.
+  if(!(vault.patients||[]).length&&!(vault.recipes||[]).length){try{await bootstrapRemoteVault(vault,{mergeProfile:isEmptyLocalVault(vault)})}catch(err){throw new Error(`Protección de restauración: no se pudo leer la nube antes de escribir (${err.message}). No se envió una bóveda vacía.`)}}
   const recipes=(vault.recipes||[]).filter(r=>r?.seal?.publicToken).map(rec=>({rec,canonical_text:JSON.stringify(canonicalFactory(rec))}));
   const params={
     p_profile:stripProfile(vault),
@@ -117,9 +123,11 @@ async function syncVault(vault,canonicalFactory){
   try{bundle=await rpc('rx_sync_bundle',params,true)}catch(err){throw new Error(`Sincronización RPC: ${err.message}`)}
   if(!bundle?.ok)throw new Error('Supabase respondió sin confirmar la sincronización.');
   mergeBundle(vault,bundle);
-  const documentsUploaded=await syncDocumentUploads(vault);
-  const emrResult=await syncEmr(vault);
-  const documentsDownloaded=await syncDocumentDownloads(vault);
+  // Keep the confirmed patient/recipe merge even if the second (EMR) RPC fails.
+  // The caller persists it and reports that the clinical part is still pending.
+  let emrResult,documentsUploaded=0,documentsDownloaded=0;
+  try{documentsUploaded=await syncDocumentUploads(vault);emrResult=await syncEmr(vault);documentsDownloaded=await syncDocumentDownloads(vault)}
+  catch(err){emrResult={available:false,error:err.message||String(err)}}
   return {user:u,bundle,emrResult,documentsUploaded,documentsDownloaded};
 }
 async function syncRecipe(rec,vault,canonicalFactory){return syncVault(vault,canonicalFactory)}
@@ -128,3 +136,4 @@ async function revokeSession(sessionId){if(!sessionId)throw new Error('Sesión i
 async function signOutOthers(){return signOut('others')}
 window.RxCloud={configured,init,signIn,signOut,signOutOthers,user,authorizeUser,currentSessionId,listSessions,revokeSession,accessToken,healthcheck,syncVault,syncRecipe,syncEmr,saveRecoveryEnvelope,loadRecoveryEnvelope,uploadVaultSecret,downloadVaultSecret,syncDocumentUploads,syncDocumentDownloads,config:()=>({url:cfg.url||'',configured:configured()})};
 })();
+

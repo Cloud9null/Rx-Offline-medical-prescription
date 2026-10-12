@@ -1,6 +1,8 @@
-# Rx Offline EMR — V3.5.2
+# Clinovyra EMR — desarrollo de apps nativas
 
-PWA clínica local-first que integra expediente médico longitudinal y la receta electrónica Rx Offline existente. La receta directa sigue disponible y no obliga a crear una consulta o nota.
+Para conocer el flujo GitHub → preview Vercel → Supabase → pruebas y el significado de los archivos, consulta la [guía práctica de 55 minutos](docs/GUIA_RAPIDA_PROYECTO.md).
+
+Expediente clínico local-first con receta electrónica Rx Offline integrada. La receta directa sigue disponible sin crear una consulta o nota. Esta rama prepara apps Android, iPhone y Windows, junto con la PWA existente. La producción continúa en la versión publicada hasta revisar y promover estos cambios.
 
 ## Capacidades
 
@@ -15,14 +17,15 @@ PWA clínica local-first que integra expediente médico longitudinal y la receta
 - Copiar, compartir o descargar la nota como `.txt` estándar. Estas funciones no intentan eludir políticas o restricciones de otro sistema.
 - Documentos PDF/JPEG/PNG cifrados antes de salir del dispositivo; Supabase Storage solo recibe ciphertext en un bucket privado owner-scoped.
 - Recuperación segura entre dispositivos mediante código aleatorio, PBKDF2-SHA-256 y sobre AES-GCM. El servidor nunca recibe la llave maestra ni el código en claro.
+- La importación de un respaldo local comprueba el PIN y descifra el contenido antes de sustituir la bóveda; rechaza respaldos ligados a otra cuenta y escribe metadatos y contenido en una sola transacción.
 - Supabase Auth/RLS y sincronización owner-only con cola, backoff y conflictos explícitos.
 - Acceso personal en dos capas: allowlist de propietario en Supabase y PIN/Face ID de la bóveda en cada dispositivo. El dominio público no permite crear una bóveda sin autorizar primero la cuenta.
 - Panel de dispositivos con sesiones reales de Supabase Auth, fecha/última actividad, red parcialmente enmascarada, revocación individual, cierre de todas las demás sesiones y desautorización local.
-- Navegación adaptativa: rail lateral persistente en escritorio y menú superior desplegable en móvil, sin barra inferior fija.
+- Navegación adaptativa: rail lateral en escritorio; dock inferior de cinco accesos y menú de secciones adicionales en móvil.
 - Efecto Liquid Glass progresivo en iPhone PWA, con fallback compatible para Android/Windows/web y respeto a `prefers-reduced-motion`.
-- Diecisiete paletas premium, incluidas dos variantes oscuras.
+- Identidad Clinovyra con icono y dos paletas nuevas, incluida una nocturna.
 - Instalación PWA en iPhone, iPad, Android y escritorio; PIN siempre disponible, rotación local segura del PIN y biometría WebAuthn autoverificada con PRF o `largeBlob` protegido según capacidad del navegador.
-- Veintiuna paletas premium separadas en temas claros y nocturnos. El acceso rápido recuerda la última selección; incluye `Deep Clinic`, `Aurora Night`, `Obsidian Gold`, `Burgundy Noir`, `Emerald Night` y `Cobalt Noir`.
+- Veintitrés paletas premium separadas en temas claros y nocturnos. El acceso rápido recuerda la última selección.
 - En Safari/iPhone cada ceremonia WebAuthn parte de una acción explícita: se reutiliza el PRF del alta cuando está disponible y, si hace falta otra ceremonia, la interfaz solicita **Completar con Face ID** en un segundo toque.
 
 ## Desarrollo y pruebas
@@ -35,11 +38,13 @@ npm run test:e2e
 
 Los E2E usan datos sintéticos. Consulta [despliegue](docs/DEPLOYMENT.md), [backup y recuperación](docs/BACKUP_RESTORE.md), [privacidad de IA](docs/AI_PRIVACY.md), [preparación SaaS](docs/SAAS_READINESS.md) y el [reporte de pruebas](docs/TEST_REPORT.md).
 
+El proyecto nativo está en [`native/`](native/) y su guía de compilación y recuperación es [Aplicaciones nativas](docs/NATIVE_APPS.md). La [matriz NOM](docs/NOM_MATRIX.md) indica controles presentes y brechas abiertas. Crear un APK/IPA/EXE instalable requiere compilar y probar en el sistema operativo y dispositivo correspondientes; el código fuente por sí solo no acredita conformidad normativa.
+
 ## Backend compartido
 
 Las siete migraciones aditivas de `supabase/migrations/` están aplicadas al proyecto Supabase existente **Expediente Medico v1**. No se creó una rama ni otro proyecto facturable. Las tres últimas incorporan recuperación E2EE/documentos privados, una allowlist administrativa y control de sesiones del propietario; no borran ni reescriben recetas, pacientes o notas existentes.
 
-El frontend V3.5.1 está integrado en `main` y desplegado en producción. V3.5.2 incorpora rotación local del PIN y un control explícito de modo nocturno; debe pasar por rama, Preview y pruebas antes de promoverse.
+El backend Supabase de producción no se modifica en este trabajo. La nueva identidad, navegación y proyectos nativos se revisan en una rama antes de cualquier publicación.
 
 ## IA generativa opcional
 
@@ -63,3 +68,4 @@ La función `/api/clinical-note` valida tanto la sesión Supabase como la allowl
 ## Instalar en iPhone
 
 Abre el dominio HTTPS definitivo en Safari, usa **Compartir → Añadir a pantalla de inicio** y activa Face ID después de fijar el dominio. En **Ajustes → Bloqueo y biometría**, configura y ejecuta **Probar desbloqueo** antes de depender de él. La credencial está ligada al dominio y el PIN permanece como recuperación local.
+

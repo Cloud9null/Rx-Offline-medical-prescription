@@ -26,9 +26,11 @@
 - El token QR de receta es portador.
 - El texto libre enviado voluntariamente a IA puede contener identificadores escritos por el usuario.
 - Vercel, Supabase y el proveedor de IA requieren evaluación contractual y de privacidad.
-- Biometría depende de WebAuthn PRF; el PIN es fallback.
+- La web usa WebAuthn PRF/largeBlob donde esté disponible; Android/iOS usan credenciales protegidas por biometría fuerte en Keychain/Keystore. El PIN local es fallback. El EXE todavía no implementa Windows Hello nativo.
 - Una revocación remota no puede borrar la bóveda de un equipo offline. Al volver a conectarse, la app comprueba la sesión; hasta entonces la protección efectiva es el cifrado local y su PIN/biometría.
 - Los archivos estáticos de una PWA son públicamente descargables; la protección cubre acceso funcional, datos y API, no pretende ocultar el código cliente.
+- La edición comercial aún no existe: la allowlist y RLS actuales son para un único propietario. Una política de recetas escrita solo en JavaScript se puede modificar; el SaaS necesita validación transaccional en servidor, roles/tenants y pruebas de aislamiento.
+- La revisión de alergias actual identifica coincidencias textuales declaradas, no equivalencias farmacológicas, interacciones ni ajuste de dosis. Una ausencia de alertas no demuestra seguridad de una prescripción.
 
 ## Frontera exacta de cifrado
 
@@ -47,3 +49,4 @@ Por lo tanto, el producto no debe anunciarse como E2EE integral. Convertir tambi
 Validar Preview en dos dispositivos con datos sintéticos; activar MFA y protección de contraseñas filtradas; aprobar aviso, ARCO, retención e incidentes; habilitar IA solo tras evaluación; revisar RLS, grants, dependencias y logs sanitizados.
 
 Las advertencias Advisor restantes incluyen RPC legacy y los nuevos RPC de sesión `SECURITY DEFINER`, además de protección de contraseñas filtradas desactivada. Los RPC de sesión necesitan inspeccionar `auth.sessions`, fijan `search_path=''`, validan `auth.uid()` y la allowlist, niegan ejecución a `anon/public` y nunca devuelven datos clínicos. `verify_prescription` conserva su contrato público por token.
+

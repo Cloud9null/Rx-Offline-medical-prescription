@@ -10,12 +10,15 @@
 6. `cloud.js`: Auth/REST/RPC, Storage privado, bootstrap, cola/backoff y conflictos.
 7. `api/clinical-note.js`: proxy autenticado para IA opcional; el secreto nunca llega al cliente.
 8. Supabase: tablas owner-scoped, RPC `SECURITY INVOKER`, sobres y bucket privado.
+9. `product-policy.js`: edición personal activa y contrato comprobable de nota final previa a receta para una futura edición comercial. No sustituye una validación transaccional de backend multi-tenant.
 
 ## Modelo e inmutabilidad
 
 `vault.emr` contiene consultas, notas/versiones, diagnósticos, observaciones, alergias, medicamentos, órdenes, documentos, consentimientos, vínculos Rx, auditoría, cola y conflictos. Todo se cifra localmente. `vault.patients` sigue siendo la identidad única.
 
 Un borrador es mutable. Finalizar genera snapshot canónico, SHA-256 y firma ECDSA. Una nota final no se edita: las correcciones son addenda firmados. Dos finales distintos se conservan como conflicto. `prescriptionLinks` vincula Rx sin cambiar el payload firmado histórico.
+
+La edición personal conserva receta directa y talonario manual. En el SaaS previsto, la receta requerirá nota final del mismo paciente/consulta y una referencia firmada a esa nota. La política de cliente y sus pruebas están preparadas, pero el esquema owner-only y `rx_sync_bundle` todavía no pueden imponerla en servidor. No se debe habilitar un tenant comercial con solo cambiar una bandera de frontend.
 
 ## Documentos E2EE
 
@@ -39,3 +42,4 @@ Guardado local cifrado → cola persistente → bootstrap Rx → upload de docum
 ## Asistente
 
 El modo local reordena únicamente hechos aportados por el médico. El modo externo es opt-in, envía un payload sin identificadores directos y solo completa campos vacíos. Ningún modo finaliza ni firma automáticamente.
+
