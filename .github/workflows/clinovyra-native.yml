@@ -108,8 +108,8 @@ jobs:
           node-version: '22'
       - run: npm ci --no-audit --no-fund
       - run: npm run ios:init
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.9.0 CURRENT_PROJECT_VERSION=390 build
-      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.9.0 CURRENT_PROJECT_VERSION=390 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived-sim CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.9.1 CURRENT_PROJECT_VERSION=391 build
+      - run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination 'generic/platform=iOS' -derivedDataPath ios-derived-device CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=3.9.1 CURRENT_PROJECT_VERSION=391 build
       - name: Package unsigned iPhone IPA for AltStore/Sideloadly signing
         run: |
           mkdir -p ios-unsigned/Payload

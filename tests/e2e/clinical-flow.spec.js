@@ -21,11 +21,16 @@ test('synthetic patient → final note → linked prescription → timeline',asy
 
   await page.locator('.bottom-nav [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
   await page.locator('#patientName').fill('Paciente Sintético Uno');await page.locator('#patientDob').fill('1990-02-10');await page.locator('#patientSex').selectOption('F');await page.locator('#patientAddress').fill('Domicilio sintético 123');
+  await page.locator('#patientAllergyStatus').selectOption('none_reported');
+  await page.locator('#patientPathologicalHistory').fill('Antecedente sintético documentado');
+  await page.locator('#patientNonPathologicalHistory').fill('Actividad física declarada');
   await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
   await expect(page.locator('#patientList')).toContainText('Paciente Sintético Uno');
   await page.locator('[data-record-patient]').first().click();
   await expect(page.locator('#patientRecord')).toContainText('10 de febrero de 1990');
-  await expect(page.locator('#patientRecord')).toContainText('Información no confirmada');
+  await expect(page.locator('.record-head')).toContainText('Paciente niega alergias conocidas');
+  await expect(page.locator('.record-head')).toContainText('Antecedente sintético documentado');
+  await expect(page.locator('.record-head')).toContainText('Actividad física declarada');
   await expect(page.locator('#screen-emr')).toHaveClass(/record-open/);
   await page.locator('#closeRecord').click();
   await expect(page.locator('#screen-patients')).toHaveClass(/active/);
@@ -52,6 +57,15 @@ test('synthetic patient → final note → linked prescription → timeline',asy
   await expect(page.locator('#patientRecord')).toContainText('Consultas recientes');
   await expect(page.locator('#patientRecord')).toContainText('Tos y odinofagia');
   await expect(page.locator('.medication-summary')).toContainText('Paracetamol');
+  for(const [filter,kind] of [['encounters','encounter'],['final','encounter'],['prescriptions','prescription']]){
+    await page.locator(`[data-record-filter="${filter}"]`).click();
+    await expect(page.locator(`#recordEventList .record-event[data-record-kind="${kind}"]:visible`)).toHaveCount(1);
+    await expect(page.locator(`[data-record-filter="${filter}"]`)).toHaveAttribute('aria-pressed','true');
+  }
+  await page.locator('[data-record-filter="unlinked"]').click();
+  await expect(page.locator('#recordFilterEmpty')).toContainText('No hay recetas sin nota');
+  await page.locator('#recordShowAll').click();
+  await expect(page.locator('#recordEventList .record-event:visible')).toHaveCount(2);
   await page.locator('[data-stop-med]').click();
   await expect(page.locator('.medication-summary')).toContainText('Suspendido');
 });
@@ -383,6 +397,16 @@ test('mobile note actions, official local diagnosis search, filters and patient 
   await page.locator('.mobile-dock [data-nav="patients"]').click();await page.locator('#newPatientBtn').click();
   await page.locator('#patientName').fill('Paciente Sintético Móvil');await page.locator('#patientDob').fill('2001-02-03');
   await page.locator('#patientForm').getByRole('button',{name:'Guardar paciente'}).click();
+  await page.locator('.mobile-dock [data-nav="rx"]').click();
+  await page.locator('#rxPatientSearch').fill('mOviL');
+  await expect(page.locator('#rxPatientMatches button')).toHaveCount(1);
+  await page.locator('#rxPatientMatches button').click();
+  await expect(page.locator('#selectedPatientSummary')).toContainText('Paciente Sintético Móvil');
+  await page.locator('#rxPatientSearch').fill('03/02/2001');
+  await expect(page.locator('#rxPatientMatches button')).toHaveCount(1);
+  await page.locator('#rxPatientMatches button').click();
+  await expect(page.locator('#rxPatient')).not.toHaveValue('');
+  await page.locator('.mobile-dock [data-nav="patients"]').click();
   await page.locator('[data-consult-patient]').click();await page.locator('#encounterStartForm').getByRole('button',{name:'Abrir expediente'}).click();
   await page.locator('[data-dx-search]').fill('N18.5');
   await page.locator('.dx-options button').first().click();
@@ -392,8 +416,9 @@ test('mobile note actions, official local diagnosis search, filters and patient 
   await page.locator('.dx-options button[data-code="A01.00"]').click();
   await expect(page.locator('[data-dx-text]')).toHaveValue(/Fiebre tifoidea, no especificada/i);
   await page.locator('[data-note-field="reasonForVisit"]').fill('Control clínico sintético');
-  await expect(page.locator('.finalize-bar')).toHaveCSS('position','relative');
+  await expect(page.locator('#screen-encounter .finalize-bar')).toHaveCSS('position','static');
   await page.locator('#finalizeNoteBtn').click();
+  await expect(page.locator('#screen-encounter .finalize-bar')).toHaveCSS('position','static');
   await expect(page.locator('.integrity-badge')).toContainText('Integridad verificada');
   await expect(page.locator('#printableClinicalNote')).toContainText('CIE-10-ES 2026');
   await page.locator('#backToEmr').click();

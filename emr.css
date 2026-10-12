@@ -83,3 +83,30 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 #encounterDetail .finalize-bar {position:relative;bottom:auto;z-index:1;box-shadow:none;margin-bottom:28px;background:var(--panel)}
 
 .diagnosis-row .dx-edition-label{grid-column:1/-1}.dx-options button[disabled]{opacity:.6;cursor:default}.dx-edition-label select{min-height:48px}
+
+/* The patient's essential facts lead, followed by records and then actions. */
+#patientRecord .record-head{display:block}
+.record-identity p{margin:6px 0 0!important;line-height:1.5}
+.record-clinical-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:19px}
+.record-clinical-fact{min-width:0;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.record-clinical-fact strong{display:block;color:var(--primary);font-size:.73rem;margin-bottom:5px}
+.record-clinical-fact p{margin:0!important;color:var(--text)!important;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.86rem}
+.record-allergy-known{border-color:color-mix(in srgb,var(--danger) 42%,var(--line))}
+.record-counts>button{display:flex;align-items:center;gap:8px;text-align:left;min-height:66px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);cursor:pointer}
+.record-counts>button small{margin-left:auto;color:var(--primary);font-weight:800}
+.record-counts>button:hover,.record-counts>button[aria-pressed="true"]{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 9%,var(--panel))}
+.record-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.record-actions>div:first-child{display:grid;gap:3px}.record-actions small{color:var(--muted)}
+.record-actions .row-actions{margin:0}.record-actions .btn{min-height:44px}
+.record-extra summary{cursor:pointer;font-weight:750}.record-extra dl{margin:12px 0 0}.record-extra dl>div{margin-top:10px}.record-extra dt{color:var(--muted);font-size:.74rem}.record-extra dd{margin:2px 0;white-space:pre-wrap}
+.record-timeline{scroll-margin-top:110px}.record-timeline-head{display:flex;justify-content:space-between;gap:12px}
+#recordEventList .record-event[hidden],#recordFilterEmpty[hidden],.rx-patient-matches[hidden]{display:none!important}
+.rx-patient-search{position:relative}.rx-patient-matches{display:grid;gap:4px;max-height:280px;overflow-y:auto;padding:6px;margin-top:5px;border:1px solid var(--line);border-radius:15px;background:var(--panel);box-shadow:0 12px 30px rgba(10,30,42,.13)}
+.rx-patient-matches button{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;width:100%;padding:10px 12px;text-align:left;border:0;border-radius:10px;background:transparent;color:var(--text);cursor:pointer}
+.rx-patient-matches button:hover,.rx-patient-matches button:focus-visible{background:color-mix(in srgb,var(--primary) 10%,var(--panel))}
+.rx-patient-matches small{color:var(--muted)}.rx-patient-matches p{margin:8px;color:var(--muted);font-size:.78rem}
+.patient-intake-section{display:grid;gap:10px;margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--panel2)}
+.patient-intake-section h4,.patient-intake-section p{margin:0}.patient-intake-extra{margin-bottom:15px}.patient-intake-extra summary{cursor:pointer;font-weight:750;margin-bottom:10px}.patient-intake-extra label{display:block;margin-top:10px}
+/* Both editable and signed notes use the same in-flow action block. */
+#screen-encounter .finalize-bar{position:static!important;bottom:auto!important;z-index:auto;box-shadow:none;margin:18px 0 30px;background:var(--panel)}
+@media(max-width:680px){.record-clinical-grid{grid-template-columns:1fr}.record-counts{grid-template-columns:repeat(2,minmax(0,1fr))}.record-counts>button{display:grid;gap:2px;min-height:82px}.record-counts>button small{margin:0}.record-actions .row-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.record-actions .btn{white-space:normal;min-height:48px}.record-timeline-head{align-items:flex-start}.record-timeline-head .btn{flex:none}.rx-patient-matches button{align-items:flex-start;flex-direction:column;gap:2px}}
